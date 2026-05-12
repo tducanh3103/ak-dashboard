@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>An Khang Online — Báo cáo sức khỏe</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ─── RESET ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── DESIGN TOKENS ──────────────────────────────────────── */
+:root {
+  --green-primary: #39B54A;
+  --green-bar:     #61D836;
+  --blue-web:      #00A1FE;
+  --black:         #000000;
+  --text-default:  #333333;
+  --text-muted:    #6E6E6E;
+  --badge-bg:      #F2FAF2;
+  --row-bg:        #F8F8F8;
+  --border-light:  #E0E0E0;
+  --white:         #FFFFFF;
+  --bg-page:       #F5F6F5;
+  --border-box:    1px solid #000000;
+}
+
+/* ─── TYPOGRAPHY ─────────────────────────────────────────── */
+body {
+  font-family: 'Helvetica Neue', HelveticaNeue, Helvetica, Arial, sans-serif;
+  font-weight: 300;
+  background: var(--bg-page);
+  color: var(--text-default);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ─── HEADER ─────────────────────────────────────────────── */
+.header {
+  background: var(--white);
+  border-bottom: 1px solid var(--border-light);
+  padding: 10px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  gap: 12px;
+}
+.header-left { display: flex; align-items: center; gap: 10px; }
+
+/* Logo = 1.8× line-height của text body (13px × 1.5 × 1.8 ≈ 35px) */
+.logo-wrap {
+  width: 35px; height: 35px;
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+}
+.logo-wrap img {
+  width: 100%; height: 100%;
+  object-fit: contain; border-radius: 50%; display: block;
+}
+.logo-fallback {
+  width: 35px; height: 35px; border-radius: 50%;
+  background: var(--green-primary);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; color: #fff;
+}
+
+/* Header brand: cả 2 dòng font-size bằng nhau, đều bold */
+.header-brand {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1.4;
+  display: flex; flex-wrap: wrap; gap: 0 6px; align-items: baseline;
+}
+.header-brand .name { color: var(--green-primary); }
+.header-brand .sub  { color: var(--black); }
+
+.header-ts { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+/* ─── TABS ───────────────────────────────────────────────── */
+.tab-wrap {
+  background: var(--white);
+  border-bottom: 1px solid var(--border-light);
+  padding: 10px 32px;
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.tab-btn {
+  padding: 5px 18px; border-radius: 20px;
+  border: 1px solid var(--border-light);
+  background: transparent; color: var(--text-muted);
+  font-family: inherit; font-size: 12px; cursor: pointer;
+  transition: all 0.15s;
+}
+.tab-btn:hover  { border-color: var(--green-primary); color: var(--green-primary); }
+.tab-btn.active { background: var(--green-primary); color: #fff; border-color: var(--green-primary); font-weight: 500; }
+
+/* ─── PAGE ───────────────────────────────────────────────── */
+.container { max-width: 1200px; margin: 0 auto; padding: 24px 32px 48px; }
+
+/* ─── SLIDE ──────────────────────────────────────────────── */
+.slide { background: var(--white); margin-bottom: 28px; }
+
+/* Slide header — NO bottom divider */
+.slide-hd {
+  padding: 12px 24px;
+  display: flex; align-items: center; gap: 8px;
+}
+/* Logo in slide header: 1.8× 12px text line-height = 22px */
+.slide-hd .slogo { width: 22px; height: 22px; flex-shrink: 0; }
+.slide-hd .slogo img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
+.slide-hd .sfb {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--green-primary);
+  display: none; align-items: center; justify-content: center;
+  font-weight: 700; color: #fff; font-size: 10px;
+}
+.slide-hd .stxt { font-weight: 700; font-size: 12px; text-transform: uppercase; color: var(--black); }
+.slide-hd .stxt .gn { color: var(--green-primary); }
+
+/* Tăng khoảng cách giữa slide header và nội dung */
+.slide-body { padding: 20px 24px 20px; }
+
+/* ─── GRIDS ──────────────────────────────────────────────── */
+.row3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 18px; }
+.row2 { display: grid; grid-template-columns: 2fr 1.1fr;    gap: 16px; margin-bottom: 18px; }
+
+/* ─── CHART BOX ──────────────────────────────────────────── */
+.cbox {
+  border: var(--border-box);
+  position: relative;
+  padding: 28px 14px 14px;
+}
+.cbox-title {
+  position: absolute; top: -14px; left: 14px;
+  background: var(--white); padding: 2px 12px;
+  font-weight: 700; font-size: 15px; color: var(--black);
+  white-space: nowrap; line-height: 1.5;
+}
+
+/* ─── LEGEND ─────────────────────────────────────────────── */
+.legend { display: flex; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+.litem  { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-default); font-weight: 300; }
+.ldot   { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+/* ─── KPI BLOCK ──────────────────────────────────────────── */
+.kpi { display: flex; align-items: flex-start; gap: 12px; margin-top: 12px; }
+.kpi-num { font-size: 34px; font-weight: 700; color: var(--black); line-height: 1; }
+.kpi-txt { font-size: 12px; color: var(--text-default); line-height: 1.6; }
+.kpi-txt strong { font-weight: 500; }
+
+/* ─── SUMMARY ────────────────────────────────────────────── */
+.summary { border: var(--border-box); padding: 14px 16px; }
+.summary h4 { font-size: 13px; font-weight: 500; color: var(--black); margin-bottom: 8px; }
+.summary ul { list-style: disc; padding-left: 18px; }
+.summary li {
+  font-size: 12px; font-weight: 300; color: var(--text-default);
+  line-height: 1.7; margin-bottom: 2px;
+}
+.summary li strong { font-weight: 500; color: var(--black); }
+.up   { color: #27ae60; font-weight: 500; }
+.down { color: #e74c3c; font-weight: 500; }
+
+/* ─── APP KPI ────────────────────────────────────────────── */
+.app-kpi {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 6px; padding: 10px 8px;
+}
+.app-kpi .big { font-size: 28px; font-weight: 700; color: var(--black); }
+.app-kpi .sub { font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.5; font-weight: 300; }
+
+/* ─── DONUT LEGEND TABLE ─────────────────────────────── */
+.donut-note {
+  margin-top: 10px;
+  width: auto;
+  border-collapse: collapse;
+}
+.donut-note td {
+  font-size: 11px;
+  color: var(--text-default);
+  padding: 2px 0;
+  vertical-align: middle;
+  line-height: 1.35;
+  font-weight: 300;
+}
+.donut-note .dn-dot {
+  width: 10px; height: 10px; border-radius: 2px;
+  display: inline-block; margin-right: 4px;
+  vertical-align: middle; flex-shrink: 0;
+}
+.donut-note .dn-pct  { font-weight: 700; color: var(--black); white-space: nowrap; padding-right: 8px; }
+.donut-note .dn-name { color: var(--text-muted); padding-left: 0; white-space: nowrap; }
+
+/* ─── PLACEHOLDER ────────────────────────────────────────── */
+.ph { display: flex; align-items: center; justify-content: center; height: 150px; flex-direction: column; gap: 6px; }
+.ph span  { font-size: 12px; color: #bbb; }
+.ph small { font-size: 10px; color: #ccc; }
+
+/* ─── STATE ──────────────────────────────────────────────── */
+.loading { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 13px; }
+.err-box { background: #fef2f2; border: 1px solid #fca5a5; padding: 12px 16px; font-size: 12px; color: #b91c1c; margin: 1rem 0; }
+.footer  { text-align: center; color: #bbb; font-size: 11px; padding: 20px 0 8px; }
+
+/* ─── RESPONSIVE ─────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .header { padding: 10px 16px; flex-wrap: wrap; gap: 6px; }
+  .header-brand { font-size: 11px; }
+  .logo-wrap { width: 28px; height: 28px; }
+  .logo-fallback { width: 28px; height: 28px; font-size: 12px; }
+  .tab-wrap { padding: 8px 16px; gap: 4px; }
+  .tab-btn { padding: 4px 12px; font-size: 11px; }
+  .container { padding: 14px 16px 32px; }
+  .slide-hd { padding: 10px 14px; }
+  .slide-body { padding: 14px 14px 16px; }
+  .row3 { grid-template-columns: 1fr; gap: 24px; }
+  .row2 { grid-template-columns: 1fr; }
+  .cbox { padding: 28px 12px 12px; }
+  .cbox-title { font-size: 12px; left: 10px; }
+  .summary li { font-size: 11px; }
+}
+@media (min-width: 701px) and (max-width: 960px) {
+  .row3 { grid-template-columns: 1fr 1fr; }
+  .row3 > *:last-child { grid-column: 1 / -1; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-wrap" id="hLogo">
+      <div class="logo-fallback">A</div>
+    </div>
+    <div class="header-brand">
+      <span class="name">Nhà thuốc An Khang Online</span>
+      <span class="sub">Báo cáo sức khỏe định kỳ</span>
+    </div>
+  </div>
+  <div class="header-ts" id="lastUpdated"></div>
+</div>
+
+<!-- TABS -->
+<div class="tab-wrap" id="tabNav"></div>
+
+<!-- CONTENT -->
+<div class="container">
+  <div id="rc"><div class="loading">Đang tải dữ liệu...</div></div>
+  <div class="footer" id="footer"></div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════════════════ */
+const API     = "https://script.google.com/macros/s/AKfycbzJaaAxK9d3rUT3RNWaoFRsWOS-KbVZM7pkSG3CJxAxIOVX-8_kYDCe55EeeifVpEqUOQ/exec";
+const MONTHS  = ["2026-01","2026-02","2026-03","2026-04","2026-05"];
+const LBL     = {"2026-01":"T1/2026","2026-02":"T2/2026","2026-03":"T3/2026","2026-04":"T4/2026","2026-05":"T5/2026"};
+const LOGO_URL = "https://www.figma.com/api/mcp/asset/fddbaa46-5c6f-4316-bc00-dde5979aaa92";
+
+const GREEN_BAR = "#61D836";
+const BLUE_WEB  = "#00A1FE";
+const TEXT_DEF  = "#333333";
+const TEXT_MUT  = "#6E6E6E";
+
+// Donut palettes
+const PAL_CAT  = ["#2E8B40","#61D836","#00CCA0","#1A6B2E","#00897B","#39B54A","#004444"];
+const PAL_KENH = ["#61D836","#00A1FE","#00897B","#1A6B2E","#A3D9FF"];
+
+const cache  = {};
+const charts = {};
+let current  = "2026-03";
+
+/* ══════════════════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════════════════ */
+const bil  = v => (v/1e9).toFixed(2).replace(".", ",") + " tỷ";
+const kk   = v => (v/1000).toFixed(0) + "K";
+const mil  = v => Math.round(v/1e6).toLocaleString("vi-VN") + " triệu";
+
+function chg(a,b) {
+  if (!b || b===0) return null;
+  return Math.round((a-b)/b*1000)/10;
+}
+function pctOf(v,t){ return t>0 ? Math.round(v/t*1000)/10 : 0; }
+function sign(v)   { return v>=0 ? "+" : ""; }
+
+function destroyAll() {
+  Object.keys(charts).forEach(id=>{ if(charts[id]){charts[id].destroy();delete charts[id];} });
+}
+
+/* ══════════════════════════════════════════════════════
+   BAR LABEL PLUGIN
+   - Label inside (white bold) if bar height ≥ 28px
+   - Label above  (black bold) otherwise
+══════════════════════════════════════════════════════ */
+Chart.register({
+  id: "barLabels",
+  afterDatasetsDraw(chart) {
+    const ctx = chart.ctx;
+    chart.data.datasets.forEach((ds, di) => {
+      chart.getDatasetMeta(di).data.forEach((bar, i) => {
+        const raw = ds.data[i];
+        if (!raw || raw === 0) return;
+
+        // Format with comma decimal (Vietnamese style)
+        const text = typeof raw === "number"
+          ? raw.toFixed(2).replace(".", ",").replace(/,?0+$/, "").replace(/,$/, "")
+          : String(raw);
+
+        const props = bar.getProps(["x","y","width","height"], true);
+        const barH  = Math.abs(props.height);
+        const barT  = Math.min(props.y, props.y + props.height);
+        const inside = barH >= 28;
+
+        ctx.save();
+        ctx.font         = `700 13px 'Helvetica Neue', Helvetica, Arial, sans-serif`;
+        ctx.textAlign    = "center";
+        ctx.textBaseline = inside ? "middle" : "bottom";
+        ctx.fillStyle    = inside ? "#fff" : TEXT_DEF;
+        ctx.fillText(text, props.x, inside ? barT + barH/2 : barT - 4);
+        ctx.restore();
+      });
+    });
+  }
+});
+
+/* ══════════════════════════════════════════════════════
+   GROWTH ARROW PLUGIN
+   - Runs afterDraw so chart area is fully rendered
+   - Uses layout padding top to create space above bars
+   - For stacked charts: sums all datasets per column
+══════════════════════════════════════════════════════ */
+const ARROW_PLUGIN = {
+  id: "growthArrow",
+  afterDraw(chart) {
+    if (!chart.config._growthArrow) return;
+    const { value } = chart.config._growthArrow;
+    if (value === null || value === undefined) return;
+
+    const ctx      = chart.ctx;
+    const isStacked = chart.options.scales?.y?.stacked;
+
+    // Get top-Y of each column
+    // For stacked: top = topmost bar's top
+    // For simple: dataset 0
+    function getColTop(colIdx) {
+      if (isStacked) {
+        let minY = Infinity;
+        chart.data.datasets.forEach((ds, di) => {
+          const meta = chart.getDatasetMeta(di);
+          if (meta.hidden) return;
+          const bar = meta.data[colIdx];
+          if (!bar) return;
+          const p = bar.getProps(["y","height"], true);
+          const top = Math.min(p.y, p.y + p.height);
+          if (top < minY) minY = top;
+        });
+        return minY === Infinity ? 0 : minY;
+      } else {
+        const meta = chart.getDatasetMeta(0);
+        const bar  = meta.data[colIdx];
+        if (!bar) return 0;
+        const p = bar.getProps(["y","height"], true);
+        return Math.min(p.y, p.y + p.height);
+      }
+    }
+
+    function getColX(colIdx) {
+      // Use dataset 0 or last visible dataset for x center
+      for (let di = 0; di < chart.data.datasets.length; di++) {
+        const meta = chart.getDatasetMeta(di);
+        if (!meta.hidden && meta.data[colIdx]) {
+          return meta.data[colIdx].getProps(["x"], true).x;
+        }
+      }
+      return 0;
+    }
+
+    const n = chart.data.labels.length;
+    if (n < 2) return;
+
+    const x0 = getColX(0);
+    const x1 = getColX(1);
+    const y0 = getColTop(0);
+    const y1 = getColTop(1);
+
+    // Push arrow start/end above the bar tops by a fixed margin
+    const MARGIN = 30;
+    const ax0 = x0 + 18;
+    const ay0 = y0 - MARGIN;
+    const ax1 = x1 - 18;
+    const ay1 = y1 - MARGIN;
+
+    const arrowColor = "#aaaaaa";
+    const angle = Math.atan2(ay1 - ay0, ax1 - ax0);
+    const AL = 9;
+
+    ctx.save();
+    ctx.strokeStyle = arrowColor;
+    ctx.fillStyle   = arrowColor;
+    ctx.lineWidth   = 1.5;
+
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(ax0, ay0);
+    ctx.lineTo(ax1, ay1);
+    ctx.stroke();
+
+    // Arrowhead at end
+    ctx.beginPath();
+    ctx.moveTo(ax1, ay1);
+    ctx.lineTo(ax1 - AL * Math.cos(angle - 0.38), ay1 - AL * Math.sin(angle - 0.38));
+    ctx.lineTo(ax1 - AL * Math.cos(angle + 0.38), ay1 - AL * Math.sin(angle + 0.38));
+    ctx.closePath();
+    ctx.fill();
+
+    // % label: centered on line, pushed further above it
+    const midX = (ax0 + ax1) / 2;
+    const midY = (ay0 + ay1) / 2;
+    const lbl  = (value >= 0 ? "+" : "") + value + "%";
+
+    ctx.font         = `300 13px 'Helvetica Neue', Helvetica, Arial, sans-serif`;
+    ctx.fillStyle    = TEXT_DEF;
+    ctx.textAlign    = "center";
+    ctx.textBaseline = "bottom";
+    ctx.fillText(lbl, midX, midY - 12);
+
+    ctx.restore();
+  }
+};
+Chart.register(ARROW_PLUGIN);
+
+/* ══════════════════════════════════════════════════════
+   DONUT — fixed high-DPR backing (4×) so crisp at any
+   browser zoom level. Chart.js handles the scaling.
+══════════════════════════════════════════════════════ */
+function makeDonut(id, labels, data, palette) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+
+  // Reset to CSS size; Chart.js will set backing store via devicePixelRatio
+  canvas.removeAttribute("width");
+  canvas.removeAttribute("height");
+  canvas.style.width  = "200px";
+  canvas.style.height = "200px";
+
+  // Use 4× so the chart stays crisp up to 400% browser zoom
+  const RENDER_DPR = 4;
+
+  const chart = new Chart(canvas, {
+    type: "doughnut",
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: palette.slice(0, data.length),
+        borderWidth: 1.5,
+        borderColor: "#fff",
+        hoverOffset: 4,
+      }]
+    },
+    options: {
+      responsive: false,
+      cutout: "52%",
+      devicePixelRatio: RENDER_DPR,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => `${c.label}: ${c.parsed}%` } }
+      },
+      layout: { padding: 0 },
+      animation: { duration: 600 }
+    }
+  });
+  charts[id] = chart;
+}
+
+/* ══════════════════════════════════════════════════════
+   FETCH
+══════════════════════════════════════════════════════ */
+async function fetchMonth(m) {
+  if (cache[m]) return cache[m];
+  const r = await fetch(API + "?month=" + m);
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  const d = await r.json();
+  if (d.error) throw new Error(d.error);
+  cache[m] = d;
+  return d;
+}
+
+/* ══════════════════════════════════════════════════════
+   BUILD HTML
+══════════════════════════════════════════════════════ */
+function slideHeader(lbl) {
+  return `<div class="slide-hd">
+    <div class="slogo">
+      <img src="${LOGO_URL}" alt="AK"
+        onerror="this.style.display='none';this.nextSibling.style.display='flex'">
+      <div class="sfb">A</div>
+    </div>
+    <div class="stxt"><span class="gn">Nhà thuốc An Khang Online</span> — Cập nhật tình hình kinh doanh ${lbl.toUpperCase()}</div>
+  </div>`;
+}
+
+// Build legend note table for donuts
+function donutNote(labels, data, palette) {
+  let rows = "";
+  labels.forEach((lb, i) => {
+    rows += `<tr>
+      <td class="dn-pct"><span class="dn-dot" style="background:${palette[i]||'#ccc'}"></span>${data[i]}%</td>
+      <td class="dn-name">${lb}</td>
+    </tr>`;
+  });
+  return `<table class="donut-note">${rows}</table>`;
+}
+
+function buildHTML(month, d, prev) {
+  const lbl   = LBL[month];
+  const pi    = MONTHS.indexOf(month) - 1;
+  const pl    = pi >= 0 ? LBL[MONTHS[pi]] : null;
+
+  const tpct  = d.targetRevenue ? Math.round(d.totalRevenue/d.targetRevenue*100) : null;
+  const waT   = (d.web?.revenue||0) + (d.app?.revenue||0);
+  const waS   = pctOf(waT, d.totalRevenue);
+  const rChg  = chg(d.totalRevenue, prev?.totalRevenue);
+  const wChg  = chg(d.web?.revenue, prev?.web?.revenue);
+  const aChg  = chg(d.app?.revenue, prev?.app?.revenue);
+  const cats  = d.categories || [];
+  const ch    = d.channels   || {};
+  const dl    = d.appDownloads || {};
+  const cum   = dl.cumulative || 1;
+  const thuoc = cats.find(c=>c.name==="Thuốc");
+  const top3  = cats.filter(c=>c.name!=="Thuốc").slice(0,3);
+
+  const kenhLabels = ["CC","Web","Sàn","App","Affiliate"];
+  const kenhData   = [ch.CC?.percent||0, ch.Web?.percent||0, ch.San?.percent||0, ch.App?.percent||0, ch.Affiliate?.percent||0];
+
+  function chgSpan(v) {
+    if (v===null) return "";
+    return `<span class="${v>=0?'up':'down'}">${sign(v)}${v}% so với ${pl}</span>`;
+  }
+
+  return `
+<!-- SLIDE 1 -->
+<div class="slide">
+  ${slideHeader(lbl)}
+  <div class="slide-body">
+    <div class="row3">
+
+      <!-- Doanh thu tổng -->
+      <div class="cbox">
+        <span class="cbox-title">Doanh thu Online (Tỷ đồng)</span>
+        <div style="height:190px;position:relative">
+          <canvas id="c_dt" style="position:absolute;inset:0;width:100%!important;height:100%!important"></canvas>
+        </div>
+        ${tpct !== null ? `
+        <div class="kpi" style="margin-top:14px">
+          <span class="kpi-num">${tpct}%</span>
+          <div class="kpi-txt">Hoàn thành kế hoạch ${lbl}<br><strong>Mức kế hoạch: ${bil(d.targetRevenue)}</strong></div>
+        </div>` : `<div style="font-size:11px;color:var(--text-muted);margin-top:8px">Chưa có kế hoạch tháng này</div>`}
+      </div>
+
+      <!-- Cơ cấu ngành hàng -->
+      <div class="cbox">
+        <span class="cbox-title">Cơ cấu ngành hàng</span>
+        <div style="display:flex;justify-content:center">
+          <canvas id="c_cat" width="200" height="200" style="display:block;width:200px;height:200px"></canvas>
+        </div>
+        ${donutNote(cats.map(c=>c.name), cats.map(c=>c.percent), PAL_CAT)}
+      </div>
+
+      <!-- Cơ cấu kênh -->
+      <div class="cbox">
+        <span class="cbox-title">Cơ cấu kênh bán hàng</span>
+        <div style="display:flex;justify-content:center">
+          <canvas id="c_kenh" width="200" height="200" style="display:block;width:200px;height:200px"></canvas>
+        </div>
+        ${donutNote(kenhLabels, kenhData, PAL_KENH)}
+      </div>
+
+    </div>
+
+    <div class="summary">
+      <h4>Tổng quan</h4>
+      <ul>
+        <li>Doanh thu ${lbl} đạt <strong>${bil(d.totalRevenue)}</strong>${rChg!==null?`, ${chgSpan(rChg)}`:""}. Doanh thu trung bình ngày đạt <strong>${mil(d.avgDaily)} đồng/ngày</strong> (${d.totalDays} ngày).</li>
+        ${thuoc?`<li><strong>Nhóm Thuốc đóng góp ${thuoc.percent}%</strong> tổng doanh thu.${top3.length?" Ở nhóm Non thuốc, "+top3.map(c=>`<strong>${c.name} ${c.percent}%</strong>`).join(", ")+".":""}</li>`:""}
+        <li>Về kênh bán hàng, <strong>${ch.CC?.percent||"?"}% doanh thu đến từ kênh Call center</strong>. Web và Sàn lần lượt đóng góp <strong>${ch.Web?.percent||"?"}%</strong> và <strong>${ch.San?.percent||"?"}%</strong>, App chiếm <strong>${ch.App?.percent||"?"}%</strong> doanh thu online.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2 -->
+<div class="slide">
+  ${slideHeader(lbl)}
+  <div class="slide-body">
+    <div class="row3">
+
+      <!-- DT Web-App -->
+      <div class="cbox">
+        <span class="cbox-title">Doanh thu Web – App (Tỷ đồng)</span>
+        <div class="legend">
+          <div class="litem"><div class="ldot" style="background:${GREEN_BAR}"></div>App</div>
+          <div class="litem"><div class="ldot" style="background:${BLUE_WEB}"></div>Web</div>
+        </div>
+        <div style="height:190px;position:relative">
+          <canvas id="c_wa" style="position:absolute;inset:0;width:100%!important;height:100%!important"></canvas>
+        </div>
+      </div>
+
+      <!-- Sessions -->
+      <div class="cbox">
+        <span class="cbox-title">Phiên truy cập (Triệu lượt)</span>
+        <div class="ph"><span>Chưa có dữ liệu</span><small>Cần kết nối GA4 — Bước 2D</small></div>
+      </div>
+
+      <!-- CR -->
+      <div class="cbox">
+        <span class="cbox-title">Tỷ lệ chuyển đổi</span>
+        <div class="ph"><span>Chưa có dữ liệu</span><small>CR = đơn hàng / sessions</small></div>
+      </div>
+
+    </div>
+
+    <div class="row2">
+      <div class="summary">
+        <h4>Sức khỏe Web – App</h4>
+        <ul>
+          <li>Doanh thu Web – App đóng góp <strong>${waS}% tổng doanh thu online</strong> — đạt <strong>${bil(waT)}</strong>.</li>
+          <li>Web: <strong>${bil(d.web?.revenue||0)}</strong>${wChg!==null?` (${chgSpan(wChg)})`:""} ${d.web?.target?`· Target ${bil(d.web.target)} → đạt ${Math.round(d.web.revenue/d.web.target*100)}%`:""}.</li>
+          <li>App: <strong>${bil(d.app?.revenue||0)}</strong>${aChg!==null?` (${chgSpan(aChg)})`:""} ${d.app?.target?`· Target ${bil(d.app.target)} → đạt ${Math.round(d.app.revenue/d.app.target*100)}%`:""}.</li>
+          <li>Lũy kế lượt tải App: <strong>${kk(dl.cumulative||0)} lượt</strong> — Android <strong>${Math.round((dl.android||0)/cum*100)}%</strong>, iOS <strong>${Math.round((dl.ios||0)/cum*100)}%</strong>.</li>
+        </ul>
+      </div>
+
+      <!-- Lượt tải -->
+      <div class="cbox app-kpi">
+        <span class="cbox-title">Lượt tải app</span>
+        <canvas id="c_tai" width="140" height="140" style="display:block;width:140px;height:140px"></canvas>
+        <div class="big">${kk(dl.cumulative||0)}</div>
+        <div class="sub">Lũy kế lượt tải<br>kể từ khi ra mắt App</div>
+        <div class="legend" style="justify-content:center;margin-top:4px">
+          <div class="litem"><div class="ldot" style="background:${BLUE_WEB}"></div>iOS</div>
+          <div class="litem"><div class="ldot" style="background:${GREEN_BAR}"></div>Android</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+/* ══════════════════════════════════════════════════════
+   RENDER CHARTS
+══════════════════════════════════════════════════════ */
+function renderCharts(month, d, prev) {
+  const pi    = MONTHS.indexOf(month) - 1;
+  const pl    = pi >= 0 ? LBL[MONTHS[pi]] : null;
+  const lbl   = LBL[month];
+  const xLbls = prev ? [pl, lbl] : [lbl];
+
+  const baseOpts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    layout: { padding: { top: 50, left: 4, right: 4, bottom: 0 } },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { font: { size: 11, family: "'Helvetica Neue', Helvetica, Arial, sans-serif", weight: "300" }, color: TEXT_DEF }
+      },
+      y: { display: false }
+    }
+  };
+
+  const rChg = chg(d.totalRevenue, prev?.totalRevenue);
+
+  /* ── Bar: Doanh thu tổng ── */
+  const dtData = prev
+    ? [parseFloat((prev.totalRevenue/1e9).toFixed(2)), parseFloat((d.totalRevenue/1e9).toFixed(2))]
+    : [parseFloat((d.totalRevenue/1e9).toFixed(2))];
+
+  const dtChart = new Chart(document.getElementById("c_dt"), {
+    type: "bar",
+    data: {
+      labels: xLbls,
+      datasets: [{
+        data: dtData,
+        backgroundColor: GREEN_BAR,
+        borderRadius: { topLeft: 12, topRight: 12, bottomLeft: 0, bottomRight: 0 },
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      ...baseOpts,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => c.parsed.y.toFixed(2).replace(".",",") + " tỷ" } }
+      }
+    }
+  });
+  dtChart.config._growthArrow = { value: prev ? rChg : null };
+  charts["c_dt"] = dtChart;
+
+  /* ── Donut: ngành hàng ── */
+  const cats = d.categories || [];
+  if (cats.length) {
+    makeDonut("c_cat", cats.map(c=>c.name), cats.map(c=>c.percent), PAL_CAT);
+  }
+
+  /* ── Donut: kênh ── */
+  const ch = d.channels || {};
+  makeDonut("c_kenh",
+    ["CC","Web","Sàn","App","Affiliate"],
+    [ch.CC?.percent||0, ch.Web?.percent||0, ch.San?.percent||0, ch.App?.percent||0, ch.Affiliate?.percent||0],
+    PAL_KENH
+  );
+
+  /* ── Bar: Web–App stacked ── */
+  const waChg = chg(
+    (d.web?.revenue||0)+(d.app?.revenue||0),
+    prev ? (prev.web?.revenue||0)+(prev.app?.revenue||0) : null
+  );
+
+  const waAppData = prev
+    ? [parseFloat((prev.app.revenue/1e9).toFixed(2)), parseFloat((d.app.revenue/1e9).toFixed(2))]
+    : [parseFloat((d.app.revenue/1e9).toFixed(2))];
+  const waWebData = prev
+    ? [parseFloat((prev.web.revenue/1e9).toFixed(2)), parseFloat((d.web.revenue/1e9).toFixed(2))]
+    : [parseFloat((d.web.revenue/1e9).toFixed(2))];
+
+  // Chart.js 4 stacked: dataset listed first = rendered at BOTTOM of stack
+  // Web is bottom  → borderRadius 0 everywhere
+  // App is top     → borderRadius only on top-left, top-right
+  // Key fix: borderSkipped must be "bottom" for bottom segment, false for top
+  const waChart = new Chart(document.getElementById("c_wa"), {
+    type: "bar",
+    data: {
+      labels: xLbls,
+      datasets: [
+        {
+          label: "Web",
+          data: waWebData,
+          backgroundColor: BLUE_WEB,
+          stack: "s",
+          borderRadius: 0,
+          borderSkipped: "bottom",   // tells Chart.js NOT to apply radius at bottom
+        },
+        {
+          label: "App",
+          data: waAppData,
+          backgroundColor: GREEN_BAR,
+          stack: "s",
+          borderRadius: { topLeft: 12, topRight: 12, bottomLeft: 0, bottomRight: 0 },
+          borderSkipped: false,
+        }
+      ]
+    },
+    options: {
+      ...baseOpts,
+      scales: {
+        x: baseOpts.scales.x,
+        y: { stacked: true, display: false }
+      }
+    }
+  });
+  waChart.config._growthArrow = { value: prev ? waChg : null };
+  charts["c_wa"] = waChart;
+
+  /* ── Donut: lượt tải ── */
+  const dl = d.appDownloads || {};
+  if (charts["c_tai"]) { charts["c_tai"].destroy(); delete charts["c_tai"]; }
+  const taiCanvas = document.getElementById("c_tai");
+  taiCanvas.removeAttribute("width");
+  taiCanvas.removeAttribute("height");
+  taiCanvas.style.width  = "140px";
+  taiCanvas.style.height = "140px";
+  charts["c_tai"] = new Chart(taiCanvas, {
+    type: "doughnut",
+    data: {
+      labels: ["iOS","Android"],
+      datasets: [{
+        data: [dl.ios||0, dl.android||0],
+        backgroundColor: [BLUE_WEB, GREEN_BAR],
+        borderWidth: 1, borderColor: "#fff",
+      }]
+    },
+    options: {
+      responsive: false, cutout: "60%",
+      devicePixelRatio: 4,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => `${c.label}: ${Math.round(c.parsed/(dl.cumulative||1)*100)}%` } }
+      }
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   LOAD
+══════════════════════════════════════════════════════ */
+async function load(month) {
+  document.getElementById("rc").innerHTML = `<div class="loading">Đang tải ${LBL[month]}...</div>`;
+  destroyAll();
+  try {
+    const idx = MONTHS.indexOf(month);
+    const [d, prev] = await Promise.all([
+      fetchMonth(month),
+      idx > 0 ? fetchMonth(MONTHS[idx-1]) : Promise.resolve(null)
+    ]);
+    document.getElementById("rc").innerHTML = buildHTML(month, d, prev);
+    await new Promise(r => setTimeout(r, 0));
+    renderCharts(month, d, prev);
+    document.getElementById("lastUpdated").textContent = "Cập nhật: " + new Date().toLocaleString("vi-VN");
+    document.getElementById("footer").textContent = "Nguồn: Google Sheet — An Khang Dashboard · " + LBL[month];
+  } catch(e) {
+    document.getElementById("rc").innerHTML =
+      `<div class="err-box">Lỗi tải dữ liệu: ${e.message}<br><small>Mở bằng Chrome/Safari có internet. Apps Script cần deploy với quyền "Anyone".</small></div>`;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════ */
+// Try to load Figma logo
+(function() {
+  const img = new Image();
+  img.onload = () => {
+    document.getElementById("hLogo").innerHTML =
+      `<img src="${LOGO_URL}" alt="AK" style="width:35px;height:35px;object-fit:contain;border-radius:50%;display:block">`;
+  };
+  img.src = LOGO_URL;
+})();
+
+// Tabs
+const nav = document.getElementById("tabNav");
+MONTHS.forEach(m => {
+  const b = document.createElement("button");
+  b.className   = "tab-btn" + (m === current ? " active" : "");
+  b.textContent = LBL[m];
+  b.onclick = () => {
+    current = m;
+    document.querySelectorAll(".tab-btn").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    load(m);
+  };
+  nav.appendChild(b);
+});
+
+load(current);
+</script>
+</body>
+</html>
