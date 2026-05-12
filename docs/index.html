@@ -225,6 +225,14 @@ body {
 </style>
 </head>
 <body>
+  <script>
+  // Bảo vệ báo cáo bằng mật khẩu đơn giản
+  const pw = prompt("🔐 Nhập mật khẩu để xem báo cáo An Khang:");
+  if (pw !== "AnKhang2026") {
+    document.body.innerHTML = "<div style='text-align:center;padding:80px;font-family:sans-serif'><h2>❌ Mật khẩu không đúng</h2><p>Vui lòng liên hệ team Online để được cấp quyền.</p></div>";
+    throw new Error("Unauthorized");
+  }
+</script>
 
 <!-- HEADER -->
 <div class="header">
