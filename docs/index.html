@@ -568,67 +568,29 @@ function donutNote(labels, data, palette) {
    SKELETON LOADING
 ══════════════════════════════════════════════════════ */
 function buildSkeleton() {
-  return `
-return `
-<div class="sk-msg">
-  Số liệu đang được tổng hợp — sẽ sẵn sàng trong vài giây ☕
-</div>
-
-<!-- Skeleton Slide 1 -->
-<div class="sk-slide">
-  <div class="skeleton sk-header"></div>
-  <div class="sk-row sk-row3">
-    <div class="sk-box">
-      <div class="skeleton sk-title"></div>
-      <div class="skeleton sk-chart"></div>
-    </div>
-    <div class="sk-box">
-      <div class="skeleton sk-title"></div>
-      <div class="skeleton sk-chart"></div>
-    </div>
-    <div class="sk-box">
-      <div class="skeleton sk-title"></div>
-      <div class="skeleton sk-chart"></div>
-    </div>
-  </div>
-  <div class="sk-sum">
-    <div class="skeleton sk-line w80"></div>
-    <div class="skeleton sk-line w60"></div>
-    <div class="skeleton sk-line w70"></div>
-  </div>
-</div>
-
-<!-- Skeleton Slide 2 -->
-<div class="sk-slide">
-  <div class="skeleton sk-header"></div>
-  <div class="sk-row sk-row3">
-    <div class="sk-box">
-      <div class="skeleton sk-title"></div>
-      <div class="skeleton sk-chart"></div>
-    </div>
-    <div class="sk-box">
-      <div class="skeleton sk-title"></div>
-      <div class="skeleton sk-chart"></div>
-    </div>
-    <div class="sk-box">
-      <div class="skeleton sk-title"></div>
-      <div class="skeleton sk-chart"></div>
-    </div>
-  </div>
-  <div class="sk-row sk-row2">
-    <div class="sk-sum">
-      <div class="skeleton sk-line w80"></div>
-      <div class="skeleton sk-line w60"></div>
-      <div class="skeleton sk-line w70"></div>
-      <div class="skeleton sk-line w60"></div>
-    </div>
-    <div class="sk-box">
-      <div class="skeleton sk-title"></div>
-      <div class="skeleton sk-chart"></div>
-    </div>
-  </div>
-</div>`;
-}
+  return [
+    '<div class="sk-msg">Số liệu đang được tổng hợp — sẽ sẵn sàng trong vài giây ☕</div>',
+    '<div class="sk-slide">',
+      '<div class="skeleton sk-header"></div>',
+      '<div class="sk-row sk-row3">',
+        '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
+        '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
+        '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
+      '</div>',
+      '<div class="sk-sum">',
+        '<div class="skeleton sk-line w80"></div>',
+        '<div class="skeleton sk-line w60"></div>',
+        '<div class="skeleton sk-line w70"></div>',
+      '</div>',
+    '</div>',
+    '<div class="sk-slide">',
+      '<div class="skeleton sk-header"></div>',
+      '<div class="sk-row sk-row3">',
+        '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
+        '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
+        '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
+      '</div>',
+      '<div class="sk-r
   
 function buildHTML(month, d, prev) {
   const lbl   = LBL[month];
