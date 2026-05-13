@@ -1030,9 +1030,9 @@ async function load(month) {
     document.getElementById("footer").textContent = "Nguồn: Google Sheet — An Khang Dashboard · " + LBL[month];
 
     // Prefetch tháng liền kề âm thầm để load nhanh khi user click tab
-    const idx = MONTHS.indexOf(month);
-    if (idx > 0)                   fetchMonth(MONTHS[idx - 1]).catch(() => {});
-    if (idx < MONTHS.length - 1)   fetchMonth(MONTHS[idx + 1]).catch(() => {});
+    const prefetchIdx = MONTHS.indexOf(month);
+    if (prefetchIdx > 0)                   fetchMonth(MONTHS[prefetchIdx - 1]).catch(() => {});
+    if (prefetchIdx < MONTHS.length - 1)   fetchMonth(MONTHS[prefetchIdx + 1]).catch(() => {});
   } catch(e) {
     document.getElementById("rc").innerHTML =
       `<div class="err-box">Lỗi tải dữ liệu: ${e.message}<br><small>Mở bằng Chrome/Safari có internet. Apps Script cần deploy với quyền "Anyone".</small></div>`;
