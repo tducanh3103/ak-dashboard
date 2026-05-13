@@ -243,46 +243,58 @@ body {
 /* ─── PASSWORD SCREEN ───────────────────────────────────── */
 #pwScreen {
   position: fixed; inset: 0; z-index: 999;
-  background: var(--bg-page);
+  background: #1a1a1a;
   display: flex; align-items: center; justify-content: center;
 }
 .pw-box {
   background: var(--white);
-  border: var(--border-box);
-  padding: 36px 40px;
-  width: 340px;
+  border-radius: 20px;
+  padding: 40px 44px;
+  width: 400px;
   display: flex; flex-direction: column; gap: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
 }
 .pw-logo {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 4px;
+  display: flex; align-items: center; gap: 12px; margin-bottom: 4px;
 }
-.pw-logo-dot {
-  width: 35px; height: 35px; border-radius: 50%;
+.pw-logo-img {
+  width: 44px; height: 44px; border-radius: 50%;
+  object-fit: contain; flex-shrink: 0;
+}
+.pw-logo-fallback {
+  width: 44px; height: 44px; border-radius: 50%;
   background: var(--green-primary);
   display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 14px; color: #fff; flex-shrink: 0;
+  font-weight: 700; font-size: 16px; color: #fff; flex-shrink: 0;
 }
-.pw-brand { font-size: 12px; font-weight: 700; text-transform: uppercase; line-height: 1.4; }
-.pw-brand .gn { color: var(--green-primary); }
-.pw-title { font-size: 13px; font-weight: 500; color: var(--black); }
-.pw-sub   { font-size: 11px; color: var(--text-muted); font-weight: 300; margin-top: -8px; }
+.pw-brand { font-size: 13px; font-weight: 700; text-transform: uppercase; line-height: 1.4; }
+.pw-brand .gn { color: var(--green-primary); display: block; }
+.pw-title { font-size: 16px; font-weight: 600; color: var(--black); }
+.pw-sub   { font-size: 12px; color: var(--text-muted); font-weight: 300; margin-top: -8px; }
 .pw-input {
-  width: 100%; padding: 9px 12px;
+  width: 100%; padding: 11px 16px;
   border: 1px solid var(--border-light);
+  border-radius: 10px;
   font-family: inherit; font-size: 13px; color: var(--text-default);
   outline: none; transition: border-color 0.15s;
+  background: #fafafa;
 }
-.pw-input:focus { border-color: var(--green-primary); }
+.pw-input:focus { border-color: var(--green-primary); background: #fff; }
 .pw-btn {
-  width: 100%; padding: 10px;
+  width: 100%; padding: 12px;
   background: var(--green-primary); color: #fff;
-  border: none; font-family: inherit; font-size: 13px;
-  font-weight: 500; cursor: pointer; transition: opacity 0.15s;
+  border: none; border-radius: 10px;
+  font-family: inherit; font-size: 14px;
+  font-weight: 600; cursor: pointer; transition: opacity 0.15s;
 }
 .pw-btn:hover { opacity: 0.88; }
 .pw-err {
   font-size: 11px; color: #e74c3c; font-weight: 300;
   min-height: 16px; text-align: center;
+}
+.pw-contact {
+  font-size: 11px; color: var(--text-muted);
+  text-align: center; font-weight: 300; margin-top: -4px;
 }
 @keyframes shake {
   0%,100% { transform: translateX(0); }
@@ -317,23 +329,27 @@ body {
 <body>
 
 <!-- PASSWORD SCREEN -->
+<!-- PASSWORD SCREEN -->
 <div id="pwScreen">
   <div class="pw-box" id="pwBox">
     <div class="pw-logo">
-      <div class="pw-logo-dot">A</div>
+      <img class="pw-logo-img" id="pwLogo" src="" alt="AK"
+        onerror="this.style.display='none';document.getElementById('pwLogoFb').style.display='flex'">
+      <div class="pw-logo-fallback" id="pwLogoFb">A</div>
       <div class="pw-brand">
-        <div class="gn">Nhà thuốc An Khang</div>
-        <div>Báo cáo sức khỏe định kỳ</div>
+        <span class="gn">Nhà thuốc An Khang Online</span>
+        <span>Báo cáo sức khỏe định kỳ</span>
       </div>
     </div>
-    <div class="pw-title">Đăng nhập để xem báo cáo</div>
-    <div class="pw-sub">Dành cho nội bộ — vui lòng nhập mật khẩu</div>
+    <div class="pw-title">Nhập mật khẩu để xem báo cáo</div>
+    <div class="pw-sub">Dành cho nội bộ - vui lòng nhập mật khẩu</div>
     <input class="pw-input" type="password" id="pwInput"
       placeholder="Nhập mật khẩu..." autocomplete="current-password">
     <button class="pw-btn" id="pwBtn">Xác nhận</button>
     <div class="pw-err" id="pwErr"></div>
+    <div class="pw-contact">Liên hệ team Online An Khang để được cấp quyền</div>
   </div>
-</div>  
+</div> 
   
 <!-- HEADER -->
 <div class="header">
@@ -421,15 +437,6 @@ document.getElementById("pwInput").addEventListener("keydown", e => {
   if (e.key === "Enter") handleLogin();
   document.getElementById("pwErr").textContent = "";
 });
-
-// Kiểm tra session + preload data tháng mặc định trong lúc user nhập password
-if (checkSession()) {
-  // Đã login trước đó → hiện dashboard thẳng
-  showDashboard();
-} else {
-  // Chưa login → âm thầm preload data trong lúc chờ
-  fetchMonth(current).catch(() => {});
-}
   
 const API     = "https://script.google.com/macros/s/AKfycbzJaaAxK9d3rUT3RNWaoFRsWOS-KbVZM7pkSG3CJxAxIOVX-8_kYDCe55EeeifVpEqUOQ/exec";
 const MONTHS  = ["2026-01","2026-02","2026-03","2026-04","2026-05"];
@@ -453,6 +460,15 @@ const _prevMon = new Date(_now.getFullYear(), _now.getMonth() - 1, 1);
 const _prevKey = _prevMon.getFullYear() + "-" + String(_prevMon.getMonth() + 1).padStart(2, "0");
 let current    = MONTHS.includes(_prevKey) ? _prevKey : MONTHS[MONTHS.length - 1];
 let loadToken = 0; // Token để cancel load cũ khi đổi tab nhanh
+
+// Kiểm tra session + preload data tháng mặc định trong lúc user nhập password
+if (checkSession()) {
+  // Đã login trước đó → hiện dashboard thẳng
+  showDashboard();
+} else {
+  // Chưa login → âm thầm preload data trong lúc chờ
+  fetchMonth(current).catch(() => {});
+}  
 
 /* ══════════════════════════════════════════════════════
    UTILS
@@ -1168,12 +1184,22 @@ async function load(month) {
 /* ══════════════════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════════════ */
-// Try to load Figma logo
+// Try to load Figma logo — header + password screen
 (function() {
   const img = new Image();
   img.onload = () => {
     document.getElementById("hLogo").innerHTML =
       `<img src="${LOGO_URL}" alt="AK" style="width:35px;height:35px;object-fit:contain;border-radius:50%;display:block">`;
+    // Gắn logo vào password screen
+    const pwLogo = document.getElementById("pwLogo");
+    if (pwLogo) {
+      pwLogo.src = LOGO_URL;
+      document.getElementById("pwLogoFb").style.display = "none";
+    }
+  };
+  img.onerror = () => {
+    const pwLogo = document.getElementById("pwLogo");
+    if (pwLogo) pwLogo.style.display = "none";
   };
   img.src = LOGO_URL;
 })();
