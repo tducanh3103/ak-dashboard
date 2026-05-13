@@ -83,6 +83,13 @@ body {
   border-bottom: 1px solid var(--border-light);
   padding: 10px 32px;
   display: flex; gap: 6px; flex-wrap: wrap;
+  position: sticky; top: 57px; z-index: 99;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+.tab-wrap.hide-tabs {
+  transform: translateY(-110%);
+  opacity: 0;
+  pointer-events: none;
 }
 .tab-btn {
   padding: 5px 18px; border-radius: 20px;
@@ -198,8 +205,101 @@ body {
 
 /* ─── STATE ──────────────────────────────────────────────── */
 .loading { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 13px; }
+
+/* Skeleton */
+@keyframes shimmer {
+  0%   { background-position: -800px 0; }
+  100% { background-position:  800px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 4px;
+}
+.sk-slide  { background: var(--white); margin-bottom: 28px; padding: 20px 24px; }
+.sk-header { height: 18px; width: 55%; margin-bottom: 20px; }
+.sk-row    { display: grid; gap: 16px; margin-bottom: 16px; }
+.sk-row3   { grid-template-columns: repeat(3,1fr); }
+.sk-row2   { grid-template-columns: 2fr 1.1fr; }
+.sk-box    { border: 1px solid #d0d0d0; padding: 24px 14px 14px; }
+.sk-title  { height: 14px; width: 60%; margin-bottom: 16px; }
+.sk-chart  { height: 190px; }
+.sk-sum    { border: 1px solid #d0d0d0; padding: 14px 16px; }
+.sk-line   { height: 12px; margin-bottom: 10px; }
+.sk-line.w80 { width: 80%; }
+.sk-line.w60 { width: 60%; }
+.sk-line.w70 { width: 70%; }
+.sk-msg {
+  text-align: center;
+  padding: 18px 0 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 300;
+}
 .err-box { background: #fef2f2; border: 1px solid #fca5a5; padding: 12px 16px; font-size: 12px; color: #b91c1c; margin: 1rem 0; }
 .footer  { text-align: center; color: #bbb; font-size: 11px; padding: 20px 0 8px; }
+
+/* ─── PASSWORD SCREEN ───────────────────────────────────── */
+#pwScreen {
+  position: fixed; inset: 0; z-index: 999;
+  background: var(--bg-page);
+  display: flex; align-items: center; justify-content: center;
+}
+.pw-box {
+  background: var(--white);
+  border-radius: 24px;
+  padding: 52px 56px;
+  width: 480px;
+  display: flex; flex-direction: column; gap: 20px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+}
+.pw-logo {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 6px;
+}
+.pw-logo-fallback {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--green-primary);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 20px; color: #fff; flex-shrink: 0;
+}
+.pw-brand { font-size: 16px; font-weight: 700; text-transform: uppercase; line-height: 1.5; }
+.pw-brand .gn { color: var(--green-primary); display: block; }
+.pw-title { font-size: 20px; font-weight: 600; color: var(--black); }
+.pw-sub   { font-size: 13px; color: var(--text-muted); font-weight: 300; margin-top: -8px; }
+.pw-input {
+  width: 100%; padding: 14px 18px;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  font-family: inherit; font-size: 14px; color: var(--text-default);
+  outline: none; transition: border-color 0.15s;
+  background: #fafafa;
+}
+.pw-input::placeholder { font-size: 13px; color: #bbb; }
+.pw-input:focus { border-color: var(--green-primary); background: #fff; }
+.pw-btn {
+  width: 100%; padding: 15px;
+  background: var(--green-primary); color: #fff;
+  border: none; border-radius: 12px;
+  font-family: inherit; font-size: 15px;
+  font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+  margin-top: 4px;
+}
+.pw-btn:hover { opacity: 0.88; }
+.pw-err {
+  font-size: 13px; color: #e74c3c; font-weight: 300;
+  min-height: 18px; text-align: center; margin-top: -8px;
+}
+.pw-contact {
+  font-size: 13px; color: var(--text-muted);
+  text-align: center; font-weight: 300; margin-top: -4px;
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60%  { transform: translateX(-6px); }
+  40%,80%  { transform: translateX(6px); }
+}
+.pw-shake { animation: shake 0.4s ease; }
 
 /* ─── RESPONSIVE ─────────────────────────────────────────── */
 @media (max-width: 700px) {
@@ -226,6 +326,27 @@ body {
 </head>
 <body>
 
+<!-- PASSWORD SCREEN -->
+<!-- PASSWORD SCREEN -->
+<div id="pwScreen">
+  <div class="pw-box" id="pwBox">
+    <div class="pw-logo">
+  <div class="pw-logo-fallback" id="pwLogoFb">A</div>
+  <div class="pw-brand">
+    <span class="gn">Nhà thuốc An Khang Online</span>
+    <span>Báo cáo sức khỏe định kỳ</span>
+  </div>
+</div>
+    <div class="pw-title">Nhập mật khẩu để xem báo cáo</div>
+    <div class="pw-sub">Dành cho nội bộ - vui lòng nhập mật khẩu</div>
+    <input class="pw-input" type="password" id="pwInput"
+      placeholder="Nhập mật khẩu..." autocomplete="current-password">
+    <button class="pw-btn" id="pwBtn">Xác nhận</button>
+    <div class="pw-err" id="pwErr"></div>
+    <div class="pw-contact">Liên hệ team Online An Khang để được cấp quyền</div>
+  </div>
+</div> 
+  
 <!-- HEADER -->
 <div class="header">
   <div class="header-left">
@@ -253,6 +374,70 @@ body {
 /* ══════════════════════════════════════════════════════
    CONFIG
 ══════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════
+   PASSWORD + PRELOAD
+══════════════════════════════════════════════════════ */
+const PW_HASH = "dc8f68e1937f6da455dbf7a7fc8935a539768cea2c5ad1d7170c90c709db476b";
+const SESSION_KEY = "ak_auth";
+
+// Hash password bằng SHA-256 có sẵn trong browser
+async function sha256(str) {
+  const buf  = await crypto.subtle.digest("SHA-256",
+    new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf))
+    .map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Kiểm tra session còn hiệu lực không (24 giờ)
+function checkSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return false;
+    const { exp } = JSON.parse(raw);
+    return Date.now() < exp;
+  } catch { return false; }
+}
+
+function saveSession() {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+    exp: Date.now() + 24 * 60 * 60 * 1000 // 24 giờ
+  }));
+}
+
+function showDashboard() {
+  document.getElementById("pwScreen").style.display = "none";
+  // Hiện skeleton 1s để thể hiện loading, tăng trust cho số liệu
+  document.getElementById("rc").innerHTML = buildSkeleton();
+  document.getElementById("footer").textContent = "";
+  setTimeout(() => load(current), 1000);
+}
+
+async function handleLogin() {
+  const val = document.getElementById("pwInput").value;
+  if (!val) return;
+
+  const hash = await sha256(val);
+  if (hash === PW_HASH) {
+    saveSession();
+    showDashboard();
+  } else {
+    const box = document.getElementById("pwBox");
+    document.getElementById("pwErr").textContent = "Mật khẩu không đúng, thử lại nhé!";
+    box.classList.remove("pw-shake");
+    void box.offsetWidth; // trigger reflow để reset animation
+    box.classList.add("pw-shake");
+    document.getElementById("pwInput").value = "";
+  }
+}
+
+// Gắn sự kiện
+document.getElementById("pwBtn").addEventListener("click", handleLogin);
+document.getElementById("pwInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") handleLogin();
+  document.getElementById("pwErr").textContent = "";
+});
+  
 const API     = "https://script.google.com/macros/s/AKfycbzJaaAxK9d3rUT3RNWaoFRsWOS-KbVZM7pkSG3CJxAxIOVX-8_kYDCe55EeeifVpEqUOQ/exec";
 const MONTHS  = ["2026-01","2026-02","2026-03","2026-04","2026-05"];
 const LBL     = {"2026-01":"T1/2026","2026-02":"T2/2026","2026-03":"T3/2026","2026-04":"T4/2026","2026-05":"T5/2026"};
@@ -269,7 +454,12 @@ const PAL_KENH = ["#61D836","#00A1FE","#00897B","#1A6B2E","#A3D9FF"];
 
 const cache  = {};
 const charts = {};
-let current  = "2026-03";
+// Mặc định hiển thị tháng ngay trước tháng hiện tại
+const _now     = new Date();
+const _prevMon = new Date(_now.getFullYear(), _now.getMonth() - 1, 1);
+const _prevKey = _prevMon.getFullYear() + "-" + String(_prevMon.getMonth() + 1).padStart(2, "0");
+let current    = MONTHS.includes(_prevKey) ? _prevKey : MONTHS[MONTHS.length - 1];
+let loadToken = 0; // Token để cancel load cũ khi đổi tab nhanh
 
 /* ══════════════════════════════════════════════════════
    UTILS
@@ -516,6 +706,45 @@ function donutNote(labels, data, palette) {
   return `<table class="donut-note">${rows}</table>`;
 }
 
+/* ══════════════════════════════════════════════════════
+   SKELETON LOADING
+══════════════════════════════════════════════════════ */
+function buildSkeleton() {
+  return [
+    '<div class="sk-msg">Số liệu đang được tổng hợp — sẽ sẵn sàng trong vài giây ☕</div>',
+    '<div class="sk-slide">',
+      '<div class="skeleton sk-header"></div>',
+      '<div class="sk-row sk-row3">',
+        '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
+        '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
+        '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
+      '</div>',
+      '<div class="sk-sum">',
+        '<div class="skeleton sk-line w80"></div>',
+        '<div class="skeleton sk-line w60"></div>',
+        '<div class="skeleton sk-line w70"></div>',
+      '</div>',
+    '</div>',
+    '<div class="sk-slide">',
+      '<div class="skeleton sk-header"></div>',
+      '<div class="sk-row sk-row3">',
+        '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
+        '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
+        '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
+      '</div>',
+      '<div class="sk-row sk-row2">',
+        '<div class="sk-sum">',
+          '<div class="skeleton sk-line w80"></div>',
+          '<div class="skeleton sk-line w60"></div>',
+          '<div class="skeleton sk-line w70"></div>',
+          '<div class="skeleton sk-line w60"></div>',
+        '</div>',
+        '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
+      '</div>',
+    '</div>'
+  ].join('');
+}
+  
 function buildHTML(month, d, prev) {
   const lbl   = LBL[month];
   const pi    = MONTHS.indexOf(month) - 1;
@@ -614,13 +843,25 @@ function buildHTML(month, d, prev) {
       <!-- Sessions -->
       <div class="cbox">
         <span class="cbox-title">Phiên truy cập (Triệu lượt)</span>
-        <div class="ph"><span>Chưa có dữ liệu</span><small>Cần kết nối GA4 — Bước 2D</small></div>
+        <div class="legend">
+          <div class="litem"><div class="ldot" style="background:${GREEN_BAR}"></div>App</div>
+          <div class="litem"><div class="ldot" style="background:${BLUE_WEB}"></div>Web</div>
+        </div>
+        <div style="height:190px;position:relative">
+          <canvas id="c_sessions" style="position:absolute;inset:0;width:100%!important;height:100%!important"></canvas>
+        </div>
       </div>
 
       <!-- CR -->
       <div class="cbox">
-        <span class="cbox-title">Tỷ lệ chuyển đổi</span>
-        <div class="ph"><span>Chưa có dữ liệu</span><small>CR = đơn hàng / sessions</small></div>
+        <span class="cbox-title">Tỷ lệ chuyển đổi (%)</span>
+        <div class="legend">
+          <div class="litem"><div class="ldot" style="background:${GREEN_BAR}"></div>App</div>
+          <div class="litem"><div class="ldot" style="background:${BLUE_WEB}"></div>Web</div>
+        </div>
+        <div style="height:190px;position:relative">
+          <canvas id="c_cr" style="position:absolute;inset:0;width:100%!important;height:100%!important"></canvas>
+        </div>
       </div>
 
     </div>
@@ -632,6 +873,9 @@ function buildHTML(month, d, prev) {
           <li>Doanh thu Web – App đóng góp <strong>${waS}% tổng doanh thu online</strong> — đạt <strong>${bil(waT)}</strong>.</li>
           <li>Web: <strong>${bil(d.web?.revenue||0)}</strong>${wChg!==null?` (${chgSpan(wChg)})`:""} ${d.web?.target?`· Target ${bil(d.web.target)} → đạt ${Math.round(d.web.revenue/d.web.target*100)}%`:""}.</li>
           <li>App: <strong>${bil(d.app?.revenue||0)}</strong>${aChg!==null?` (${chgSpan(aChg)})`:""} ${d.app?.target?`· Target ${bil(d.app.target)} → đạt ${Math.round(d.app.revenue/d.app.target*100)}%`:""}.</li>
+          ${d.cr ? `
+          <li>Phiên truy cập: Web <strong>${kk(d.cr.web.sessions||0)} sessions</strong>, App <strong>${kk(d.cr.app.sessions||0)} sessions</strong>.</li>
+          <li>Tỷ lệ chuyển đổi: Web <strong>${d.cr.web.rate !== null ? d.cr.web.rate+'%' : 'N/A'}</strong>, App <strong>${d.cr.app.rate !== null ? d.cr.app.rate+'%' : 'N/A'}</strong>.</li>` : ""}
           <li>Lũy kế lượt tải App: <strong>${kk(dl.cumulative||0)} lượt</strong> — Android <strong>${Math.round((dl.android||0)/cum*100)}%</strong>, iOS <strong>${Math.round((dl.ios||0)/cum*100)}%</strong>.</li>
         </ul>
       </div>
@@ -768,6 +1012,103 @@ function renderCharts(month, d, prev) {
   waChart.config._growthArrow = { value: prev ? waChg : null };
   charts["c_wa"] = waChart;
 
+  /* ── Bar: Sessions Web + App stacked ── */
+  const crData      = d.cr || {};
+  const prevCrData  = prev?.cr || {};
+
+  const sessWebData = prev
+    ? [parseFloat(((prevCrData.web?.sessions||0)/1e6).toFixed(2)), parseFloat(((crData.web?.sessions||0)/1e6).toFixed(2))]
+    : [parseFloat(((crData.web?.sessions||0)/1e6).toFixed(2))];
+  const sessAppData = prev
+    ? [parseFloat(((prevCrData.app?.sessions||0)/1e6).toFixed(2)), parseFloat(((crData.app?.sessions||0)/1e6).toFixed(2))]
+    : [parseFloat(((crData.app?.sessions||0)/1e6).toFixed(2))];
+
+  const sessChg = chg(
+    (crData.web?.sessions||0) + (crData.app?.sessions||0),
+    prev ? (prevCrData.web?.sessions||0) + (prevCrData.app?.sessions||0) : null
+  );
+
+  const sessChart = new Chart(document.getElementById("c_sessions"), {
+    type: "bar",
+    data: {
+      labels: xLbls,
+      datasets: [
+        {
+          label: "Web",
+          data : sessWebData,
+          backgroundColor: BLUE_WEB,
+          stack: "s",
+          borderRadius: 0,
+          borderSkipped: "bottom",
+        },
+        {
+          label: "App",
+          data : sessAppData,
+          backgroundColor: GREEN_BAR,
+          stack: "s",
+          borderRadius: { topLeft: 12, topRight: 12, bottomLeft: 0, bottomRight: 0 },
+          borderSkipped: false,
+        }
+      ]
+    },
+    options: {
+      ...baseOpts,
+      scales: {
+        x: baseOpts.scales.x,
+        y: { stacked: true, display: false }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => c.dataset.label + ": " + c.parsed.y.toFixed(2).replace(".",",") + "M sessions" } }
+      }
+    }
+  });
+  sessChart.config._growthArrow = { value: prev ? sessChg : null };
+  charts["c_sessions"] = sessChart;
+
+  /* ── Bar: CR Web + App grouped ── */
+  const crWebData = prev
+    ? [prevCrData.web?.rate ?? 0, crData.web?.rate ?? 0]
+    : [crData.web?.rate ?? 0];
+  const crAppData = prev
+    ? [prevCrData.app?.rate ?? 0, crData.app?.rate ?? 0]
+    : [crData.app?.rate ?? 0];
+
+  const crWebChg = chg(crData.web?.rate, prevCrData.web?.rate);
+  const crAppChg = chg(crData.app?.rate, prevCrData.app?.rate);
+
+  const crChart = new Chart(document.getElementById("c_cr"), {
+    type: "bar",
+    data: {
+      labels: xLbls,
+      datasets: [
+        {
+          label: "Web CR",
+          data : crWebData,
+          backgroundColor: BLUE_WEB,
+          borderRadius: { topLeft: 12, topRight: 12, bottomLeft: 0, bottomRight: 0 },
+          borderSkipped: false,
+        },
+        {
+          label: "App CR",
+          data : crAppData,
+          backgroundColor: GREEN_BAR,
+          borderRadius: { topLeft: 12, topRight: 12, bottomLeft: 0, bottomRight: 0 },
+          borderSkipped: false,
+        }
+      ]
+    },
+    options: {
+      ...baseOpts,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => c.dataset.label + ": " + c.parsed.y + "%" } }
+      }
+    }
+  });
+  // CR chart không dùng growthArrow vì có 2 datasets — dùng KPI text thay thế
+  charts["c_cr"] = crChart;
+
   /* ── Donut: lượt tải ── */
   const dl = d.appDownloads || {};
   if (charts["c_tai"]) { charts["c_tai"].destroy(); delete charts["c_tai"]; }
@@ -801,19 +1142,38 @@ function renderCharts(month, d, prev) {
    LOAD
 ══════════════════════════════════════════════════════ */
 async function load(month) {
-  document.getElementById("rc").innerHTML = `<div class="loading">Đang tải ${LBL[month]}...</div>`;
-  destroyAll();
+  // Tăng token — load cũ sẽ tự bỏ kết quả khi token không khớp
+  const token = ++loadToken;
+
+  document.getElementById("rc").innerHTML = buildSkeleton();
+  document.getElementById("footer").textContent = "";
   try {
     const idx = MONTHS.indexOf(month);
     const [d, prev] = await Promise.all([
       fetchMonth(month),
       idx > 0 ? fetchMonth(MONTHS[idx-1]) : Promise.resolve(null)
     ]);
+    // Nếu user đã đổi sang tab khác trong lúc chờ → bỏ qua kết quả này
+    if (token !== loadToken) return;
+
     document.getElementById("rc").innerHTML = buildHTML(month, d, prev);
     await new Promise(r => setTimeout(r, 0));
     renderCharts(month, d, prev);
     document.getElementById("lastUpdated").textContent = "Cập nhật: " + new Date().toLocaleString("vi-VN");
     document.getElementById("footer").textContent = "Nguồn: Google Sheet — An Khang Dashboard · " + LBL[month];
+
+    // Prefetch toàn bộ tháng còn lại, lan rộng từ tháng hiện tại ra 2 phía
+    // Thứ tự: gần nhất → xa nhất để user click tab nào gần cũng thấy load ngay
+    (function prefetchAll() {
+      const centerIdx = MONTHS.indexOf(month);
+      const maxRadius = Math.max(centerIdx, MONTHS.length - 1 - centerIdx);
+      for (let r = 1; r <= maxRadius; r++) {
+        const before = centerIdx - r;
+        const after  = centerIdx + r;
+        if (before >= 0)             fetchMonth(MONTHS[before]).catch(() => {});
+        if (after < MONTHS.length)   fetchMonth(MONTHS[after]).catch(() => {});
+      }
+    })();
   } catch(e) {
     document.getElementById("rc").innerHTML =
       `<div class="err-box">Lỗi tải dữ liệu: ${e.message}<br><small>Mở bằng Chrome/Safari có internet. Apps Script cần deploy với quyền "Anyone".</small></div>`;
@@ -823,12 +1183,22 @@ async function load(month) {
 /* ══════════════════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════════════ */
-// Try to load Figma logo
+// Try to load Figma logo — header + password screen
 (function() {
   const img = new Image();
   img.onload = () => {
     document.getElementById("hLogo").innerHTML =
       `<img src="${LOGO_URL}" alt="AK" style="width:35px;height:35px;object-fit:contain;border-radius:50%;display:block">`;
+    // Gắn logo vào password screen
+    const pwLogo = document.getElementById("pwLogo");
+    if (pwLogo) {
+      pwLogo.src = LOGO_URL;
+      document.getElementById("pwLogoFb").style.display = "none";
+    }
+  };
+  img.onerror = () => {
+    const pwLogo = document.getElementById("pwLogo");
+    if (pwLogo) pwLogo.style.display = "none";
   };
   img.src = LOGO_URL;
 })();
@@ -848,7 +1218,40 @@ MONTHS.forEach(m => {
   nav.appendChild(b);
 });
 
-load(current);
+// Ẩn tab bar khi scroll xuống, hiện lại khi scroll lên
+(function() {
+  const tabWrap  = document.getElementById("tabNav");
+  let lastY      = 0;
+  let ticking    = false;
+
+  window.addEventListener("scroll", () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const currentY = window.scrollY;
+        if (currentY > lastY && currentY > 100) {
+          // Scroll xuống → ẩn
+          tabWrap.classList.add("hide-tabs");
+        } else {
+          // Scroll lên → hiện
+          tabWrap.classList.remove("hide-tabs");
+        }
+        lastY   = currentY;
+        ticking = false;
+      });
+      ticking = true;
+    }
+  });
+})();
+  
+// Khởi động: check session và preload
+// Đặt ở đây để đảm bảo tất cả hàm đã được định nghĩa
+if (checkSession()) {
+  // Đã có session → hiện dashboard với skeleton 1s
+  showDashboard();
+} else {
+  // Chưa login → preload âm thầm trong lúc user nhập password
+  fetchMonth(current).catch(() => {});
+}
 </script>
 </body>
 </html>
