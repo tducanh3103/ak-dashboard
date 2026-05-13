@@ -461,15 +461,6 @@ const _prevKey = _prevMon.getFullYear() + "-" + String(_prevMon.getMonth() + 1).
 let current    = MONTHS.includes(_prevKey) ? _prevKey : MONTHS[MONTHS.length - 1];
 let loadToken = 0; // Token để cancel load cũ khi đổi tab nhanh
 
-// Kiểm tra session + preload data tháng mặc định trong lúc user nhập password
-if (checkSession()) {
-  // Đã có session → hiện dashboard với skeleton 1s
-  showDashboard();
-} else {
-  // Chưa login → preload âm thầm trong lúc user nhập password
-  fetchMonth(current).catch(() => {});
-}  
-
 /* ══════════════════════════════════════════════════════
    UTILS
 ══════════════════════════════════════════════════════ */
@@ -1252,11 +1243,14 @@ MONTHS.forEach(m => {
   });
 })();
   
-// Chỉ gọi load nếu chưa login (đã login thì showDashboard() lo)
-if (!checkSession()) {
-  // Không làm gì — load sẽ được gọi sau khi user đăng nhập thành công
+// Khởi động: check session và preload
+// Đặt ở đây để đảm bảo tất cả hàm đã được định nghĩa
+if (checkSession()) {
+  // Đã có session → hiện dashboard với skeleton 1s
+  showDashboard();
 } else {
-  // Đã có session → showDashboard đã được gọi ở trên, không cần gọi lại
+  // Chưa login → preload âm thầm trong lúc user nhập password
+  fetchMonth(current).catch(() => {});
 }
 </script>
 </body>
