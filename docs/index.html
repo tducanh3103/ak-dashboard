@@ -230,6 +230,13 @@ body {
 .sk-line.w80 { width: 80%; }
 .sk-line.w60 { width: 60%; }
 .sk-line.w70 { width: 70%; }
+.sk-msg {
+  text-align: center;
+  padding: 18px 0 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 300;
+}
 .err-box { background: #fef2f2; border: 1px solid #fca5a5; padding: 12px 16px; font-size: 12px; color: #b91c1c; margin: 1rem 0; }
 .footer  { text-align: center; color: #bbb; font-size: 11px; padding: 20px 0 8px; }
 
@@ -563,7 +570,7 @@ function donutNote(labels, data, palette) {
 function buildSkeleton() {
   return `
 return `
-<div style="text-align:center;padding:18px 0 10px;font-size:12px;color:var(--text-muted);font-weight:300">
+<div class="sk-msg">
   Số liệu đang được tổng hợp — sẽ sẵn sàng trong vài giây ☕
 </div>
 
