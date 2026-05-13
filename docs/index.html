@@ -248,54 +248,50 @@ body {
 }
 .pw-box {
   background: var(--white);
-  border-radius: 20px;
-  padding: 40px 44px;
-  width: 400px;
-  display: flex; flex-direction: column; gap: 16px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+  border-radius: 24px;
+  padding: 52px 56px;
+  width: 480px;
+  display: flex; flex-direction: column; gap: 20px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.10);
 }
 .pw-logo {
-  display: flex; align-items: center; gap: 12px; margin-bottom: 4px;
-}
-.pw-logo-img {
-  width: 44px; height: 44px; border-radius: 50%;
-  object-fit: contain; flex-shrink: 0;
+  display: flex; align-items: center; gap: 14px; margin-bottom: 6px;
 }
 .pw-logo-fallback {
-  width: 44px; height: 44px; border-radius: 50%;
+  width: 52px; height: 52px; border-radius: 50%;
   background: var(--green-primary);
   display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 16px; color: #fff; flex-shrink: 0;
-  flex-shrink: 0;
+  font-weight: 700; font-size: 20px; color: #fff; flex-shrink: 0;
 }
-.pw-brand { font-size: 15px; font-weight: 700; text-transform: uppercase; line-height: 1.4; }
+.pw-brand { font-size: 16px; font-weight: 700; text-transform: uppercase; line-height: 1.5; }
 .pw-brand .gn { color: var(--green-primary); display: block; }
-.pw-title { font-size: 16px; font-weight: 600; color: var(--black); }
-.pw-sub   { font-size: 12px; color: var(--text-muted); font-weight: 300; margin-top: -8px; }
+.pw-title { font-size: 20px; font-weight: 600; color: var(--black); }
+.pw-sub   { font-size: 13px; color: var(--text-muted); font-weight: 300; margin-top: -8px; }
 .pw-input {
-  width: 100%; padding: 11px 16px;
+  width: 100%; padding: 14px 18px;
   border: 1px solid var(--border-light);
-  border-radius: 10px;
-  font-family: inherit; font-size: 11px; color: var(--text-muted);
+  border-radius: 12px;
+  font-family: inherit; font-size: 14px; color: var(--text-default);
   outline: none; transition: border-color 0.15s;
   background: #fafafa;
 }
-.pw-input:focus { font-size: 13px; color: var(--text-default); }
+.pw-input::placeholder { font-size: 13px; color: #bbb; }
 .pw-input:focus { border-color: var(--green-primary); background: #fff; }
 .pw-btn {
-  width: 100%; padding: 12px;
+  width: 100%; padding: 15px;
   background: var(--green-primary); color: #fff;
-  border: none; border-radius: 10px;
-  font-family: inherit; font-size: 14px;
+  border: none; border-radius: 12px;
+  font-family: inherit; font-size: 15px;
   font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+  margin-top: 4px;
 }
 .pw-btn:hover { opacity: 0.88; }
 .pw-err {
-  font-size: 11px; color: #e74c3c; font-weight: 300;
-  min-height: 16px; text-align: center;
+  font-size: 13px; color: #e74c3c; font-weight: 300;
+  min-height: 18px; text-align: center; margin-top: -8px;
 }
 .pw-contact {
-  font-size: 11px; color: var(--text-muted);
+  font-size: 13px; color: var(--text-muted);
   text-align: center; font-weight: 300; margin-top: -4px;
 }
 @keyframes shake {
@@ -411,6 +407,10 @@ function saveSession() {
 
 function showDashboard() {
   document.getElementById("pwScreen").style.display = "none";
+  // Hiện skeleton 1s để thể hiện loading, tăng trust cho số liệu
+  document.getElementById("rc").innerHTML = buildSkeleton();
+  document.getElementById("footer").textContent = "";
+  setTimeout(() => load(current), 1000);
 }
 
 async function handleLogin() {
@@ -1171,10 +1171,18 @@ async function load(month) {
     document.getElementById("lastUpdated").textContent = "Cập nhật: " + new Date().toLocaleString("vi-VN");
     document.getElementById("footer").textContent = "Nguồn: Google Sheet — An Khang Dashboard · " + LBL[month];
 
-    // Prefetch tháng liền kề âm thầm để load nhanh khi user click tab
-    const prefetchIdx = MONTHS.indexOf(month);
-    if (prefetchIdx > 0)                   fetchMonth(MONTHS[prefetchIdx - 1]).catch(() => {});
-    if (prefetchIdx < MONTHS.length - 1)   fetchMonth(MONTHS[prefetchIdx + 1]).catch(() => {});
+    // Prefetch toàn bộ tháng còn lại, lan rộng từ tháng hiện tại ra 2 phía
+    // Thứ tự: gần nhất → xa nhất để user click tab nào gần cũng thấy load ngay
+    (function prefetchAll() {
+      const centerIdx = MONTHS.indexOf(month);
+      const maxRadius = Math.max(centerIdx, MONTHS.length - 1 - centerIdx);
+      for (let r = 1; r <= maxRadius; r++) {
+        const before = centerIdx - r;
+        const after  = centerIdx + r;
+        if (before >= 0)             fetchMonth(MONTHS[before]).catch(() => {});
+        if (after < MONTHS.length)   fetchMonth(MONTHS[after]).catch(() => {});
+      }
+    })();
   } catch(e) {
     document.getElementById("rc").innerHTML =
       `<div class="err-box">Lỗi tải dữ liệu: ${e.message}<br><small>Mở bằng Chrome/Safari có internet. Apps Script cần deploy với quyền "Anyone".</small></div>`;
@@ -1244,7 +1252,12 @@ MONTHS.forEach(m => {
   });
 })();
   
-load(current);
+// Chỉ gọi load nếu chưa login (đã login thì showDashboard() lo)
+if (!checkSession()) {
+  // Không làm gì — load sẽ được gọi sau khi user đăng nhập thành công
+} else {
+  // Đã có session → showDashboard đã được gọi ở trên, không cần gọi lại
+}
 </script>
 </body>
 </html>
