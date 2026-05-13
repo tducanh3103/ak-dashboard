@@ -316,7 +316,11 @@ const PAL_KENH = ["#61D836","#00A1FE","#00897B","#1A6B2E","#A3D9FF"];
 
 const cache  = {};
 const charts = {};
-let current  = "2026-03";
+// Mặc định hiển thị tháng ngay trước tháng hiện tại
+const _now     = new Date();
+const _prevMon = new Date(_now.getFullYear(), _now.getMonth() - 1, 1);
+const _prevKey = _prevMon.getFullYear() + "-" + String(_prevMon.getMonth() + 1).padStart(2, "0");
+let current    = MONTHS.includes(_prevKey) ? _prevKey : MONTHS[MONTHS.length - 1];
 let loadToken = 0; // Token để cancel load cũ khi đổi tab nhanh
 
 /* ══════════════════════════════════════════════════════
