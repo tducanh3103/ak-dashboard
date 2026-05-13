@@ -243,7 +243,7 @@ body {
 /* ─── PASSWORD SCREEN ───────────────────────────────────── */
 #pwScreen {
   position: fixed; inset: 0; z-index: 999;
-  background: #1a1a1a;
+  background: var(--bg-page);
   display: flex; align-items: center; justify-content: center;
 }
 .pw-box {
@@ -266,8 +266,9 @@ body {
   background: var(--green-primary);
   display: flex; align-items: center; justify-content: center;
   font-weight: 700; font-size: 16px; color: #fff; flex-shrink: 0;
+  flex-shrink: 0;
 }
-.pw-brand { font-size: 13px; font-weight: 700; text-transform: uppercase; line-height: 1.4; }
+.pw-brand { font-size: 15px; font-weight: 700; text-transform: uppercase; line-height: 1.4; }
 .pw-brand .gn { color: var(--green-primary); display: block; }
 .pw-title { font-size: 16px; font-weight: 600; color: var(--black); }
 .pw-sub   { font-size: 12px; color: var(--text-muted); font-weight: 300; margin-top: -8px; }
@@ -275,10 +276,11 @@ body {
   width: 100%; padding: 11px 16px;
   border: 1px solid var(--border-light);
   border-radius: 10px;
-  font-family: inherit; font-size: 13px; color: var(--text-default);
+  font-family: inherit; font-size: 11px; color: var(--text-muted);
   outline: none; transition: border-color 0.15s;
   background: #fafafa;
 }
+.pw-input:focus { font-size: 13px; color: var(--text-default); }
 .pw-input:focus { border-color: var(--green-primary); background: #fff; }
 .pw-btn {
   width: 100%; padding: 12px;
@@ -333,14 +335,12 @@ body {
 <div id="pwScreen">
   <div class="pw-box" id="pwBox">
     <div class="pw-logo">
-      <img class="pw-logo-img" id="pwLogo" src="" alt="AK"
-        onerror="this.style.display='none';document.getElementById('pwLogoFb').style.display='flex'">
-      <div class="pw-logo-fallback" id="pwLogoFb">A</div>
-      <div class="pw-brand">
-        <span class="gn">Nhà thuốc An Khang Online</span>
-        <span>Báo cáo sức khỏe định kỳ</span>
-      </div>
-    </div>
+  <div class="pw-logo-fallback" id="pwLogoFb">A</div>
+  <div class="pw-brand">
+    <span class="gn">Nhà thuốc An Khang Online</span>
+    <span>Báo cáo sức khỏe định kỳ</span>
+  </div>
+</div>
     <div class="pw-title">Nhập mật khẩu để xem báo cáo</div>
     <div class="pw-sub">Dành cho nội bộ - vui lòng nhập mật khẩu</div>
     <input class="pw-input" type="password" id="pwInput"
