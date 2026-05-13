@@ -31,6 +31,7 @@ TARGET + GA4 → [GAS API] → HTML Report → GitHub Pages URL
 1. Có 2 hàm trùng tên safeSync và safeSyncSanOnly — GAS dùng bản cuối
 2. T1 đọc từng cell riêng lẻ thay vì batch — chậm nhưng không gây lỗi
 3. GA4 chưa tích hợp — sessions chưa có trong báo cáo
+4. GA4 Web sessions lấy theo công thức (tổng - excluded), sai số ~vài trăm đến 1k/ngày so với GA4 UI do data thresholding và (not set) rows. Acceptable vì mục tiêu là CR trend.
 
 ## Báo cáo Monthly — 3 slides
 - Slide 1: Tổng quan Online (DT tháng hiện tại vs tháng trước, theo ngành hàng, theo kênh)
