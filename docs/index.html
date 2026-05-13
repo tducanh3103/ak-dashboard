@@ -361,7 +361,7 @@ function buildHTML(month,d,prev){
   const lbl=LBL[month],pi=MONTHS.indexOf(month)-1,pl=pi>=0?LBL[MONTHS[pi]]:null;
   const tpct=d.targetRevenue?Math.round(d.totalRevenue/d.targetRevenue*100):null;
   const waT=(d.web?.revenue||0)+(d.app?.revenue||0), waS=pctOf(waT,d.totalRevenue);
-  const cats=d.categories||[], ch=d.channels||{}, dl=d.appDownloads||{}, cum=dl.cumulative||1;
+  const cats=d.categories||[], ch=d.channels||{}, dl=d.appDownloads||{}, cum=dl.retained||1;
   const thuoc=cats.find(c=>c.name==="Thuốc"), top3=cats.filter(c=>c.name!=="Thuốc").slice(0,3);
   const kL=["CC","Web","Sàn","App","Affiliate"], kD=[ch.CC?.percent||0,ch.Web?.percent||0,ch.San?.percent||0,ch.App?.percent||0,ch.Affiliate?.percent||0];
   function sp(v){if(v===null)return"";return `<span class="${v>=0?'up':'down'}">${sign(v)}${v}% so với ${pl}</span>`;}
@@ -403,12 +403,12 @@ function buildHTML(month,d,prev){
     <li>Web: <strong>${bil(d.web?.revenue||0)}</strong>${wC!==null?` (${sp(wC)})`:""} ${d.web?.target?`· Target ${bil(d.web.target)} → đạt ${Math.round(d.web.revenue/d.web.target*100)}%`:""}.</li>
     <li>App: <strong>${bil(d.app?.revenue||0)}</strong>${aC!==null?` (${sp(aC)})`:""} ${d.app?.target?`· Target ${bil(d.app.target)} → đạt ${Math.round(d.app.revenue/d.app.target*100)}%`:""}.</li>
     ${d.cr?`<li>Phiên truy cập: Web <strong>${kk(d.cr.web.sessions||0)} sessions</strong>, App <strong>${kk(d.cr.app.sessions||0)} sessions</strong>.</li><li>Tỷ lệ chuyển đổi: Web <strong>${d.cr.web.rate!==null?d.cr.web.rate+"%":"N/A"}</strong>, App <strong>${d.cr.app.rate!==null?d.cr.app.rate+"%":"N/A"}</strong>.</li>`:""}
-    <li>Lũy kế lượt tải App: <strong>${kk(dl.cumulative||0)} lượt</strong> — Android <strong>${Math.round((dl.android||0)/cum*100)}%</strong>, iOS <strong>${Math.round((dl.ios||0)/cum*100)}%</strong>.</li>
+    <li>Người dùng còn giữ app: <strong>${kk(dl.retained||0)} lượt</strong> — Android <strong>${Math.round((dl.android||0)/cum*100)}%</strong>, iOS <strong>${Math.round((dl.ios||0)/cum*100)}%</strong>.</li>
   </ul></div>
   <div class="cbox app-kpi"><span class="cbox-title">Lượt tải app</span>
     <canvas id="c_tai" width="140" height="140" style="display:block;width:140px;height:140px"></canvas>
-    <div class="big">${kk(dl.cumulative||0)}</div>
-    <div class="sub">Lũy kế lượt tải<br>kể từ khi ra mắt App</div>
+    <div class="big">${kk(dl.retained||0)}</div>
+    <div class="sub">Người dùng còn giữ app<br>lũy kế đến thời điểm báo cáo</div>
     <div class="legend" style="justify-content:center;margin-top:4px"><div class="litem"><div class="ldot" style="background:${BLUE_WEB}"></div>iOS</div><div class="litem"><div class="ldot" style="background:${GREEN_BAR}"></div>Android</div></div>
   </div>
 </div>
@@ -439,7 +439,7 @@ function renderCharts(month,d,prev){
   const crC=new Chart(document.getElementById("c_cr"),{type:"bar",data:{labels:xL,datasets:[{label:"Web CR",data:prev?[pCr.web?.rate??0,cr.web?.rate??0]:[cr.web?.rate??0],backgroundColor:BLUE_WEB,borderRadius:{topLeft:12,topRight:12,bottomLeft:0,bottomRight:0},borderSkipped:false},{label:"App CR",data:prev?[pCr.app?.rate??0,cr.app?.rate??0]:[cr.app?.rate??0],backgroundColor:GREEN_BAR,borderRadius:{topLeft:12,topRight:12,bottomLeft:0,bottomRight:0},borderSkipped:false}]},options:{...bO,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+": "+c.parsed.y+"%"}}}}});charts["c_cr"]=crC;
   const dl=d.appDownloads||{};if(charts["c_tai"]){charts["c_tai"].destroy();delete charts["c_tai"];}
   const tC=document.getElementById("c_tai");tC.removeAttribute("width");tC.removeAttribute("height");tC.style.width="140px";tC.style.height="140px";
-  charts["c_tai"]=new Chart(tC,{type:"doughnut",data:{labels:["iOS","Android"],datasets:[{data:[dl.ios||0,dl.android||0],backgroundColor:[BLUE_WEB,GREEN_BAR],borderWidth:1,borderColor:"#fff"}]},options:{responsive:false,cutout:"60%",devicePixelRatio:4,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${Math.round(c.parsed/(dl.cumulative||1)*100)}%`}}}}});
+  charts["c_tai"]=new Chart(tC,{type:"doughnut",data:{labels:["iOS","Android"],datasets:[{data:[dl.ios||0,dl.android||0],backgroundColor:[BLUE_WEB,GREEN_BAR],borderWidth:1,borderColor:"#fff"}]},options:{responsive:false,cutout:"60%",devicePixelRatio:4,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${Math.round(c.parsed/(dl.retained||1)*100)}%`}}}}});
 }
 
 async function load(month){
