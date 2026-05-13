@@ -222,10 +222,10 @@ body {
 .sk-row    { display: grid; gap: 16px; margin-bottom: 16px; }
 .sk-row3   { grid-template-columns: repeat(3,1fr); }
 .sk-row2   { grid-template-columns: 2fr 1.1fr; }
-.sk-box    { border: 1px solid #000; padding: 24px 14px 14px; }
+.sk-box    { border: 1px solid #d0d0d0; padding: 24px 14px 14px; }
 .sk-title  { height: 14px; width: 60%; margin-bottom: 16px; }
 .sk-chart  { height: 190px; }
-.sk-sum    { border: 1px solid #000; padding: 14px 16px; }
+.sk-sum    { border: 1px solid #d0d0d0; padding: 14px 16px; }
 .sk-line   { height: 12px; margin-bottom: 10px; }
 .sk-line.w80 { width: 80%; }
 .sk-line.w60 { width: 60%; }
@@ -310,6 +310,7 @@ const PAL_KENH = ["#61D836","#00A1FE","#00897B","#1A6B2E","#A3D9FF"];
 const cache  = {};
 const charts = {};
 let current  = "2026-03";
+let loadToken = 0; // Token để cancel load cũ khi đổi tab nhanh
 
 /* ══════════════════════════════════════════════════════
    UTILS
@@ -561,6 +562,11 @@ function donutNote(labels, data, palette) {
 ══════════════════════════════════════════════════════ */
 function buildSkeleton() {
   return `
+return `
+<div style="text-align:center;padding:18px 0 10px;font-size:12px;color:var(--text-muted);font-weight:300">
+  Số liệu đang được tổng hợp — sẽ sẵn sàng trong vài giây ☕
+</div>
+
 <!-- Skeleton Slide 1 -->
 <div class="sk-slide">
   <div class="skeleton sk-header"></div>
@@ -1014,15 +1020,20 @@ function renderCharts(month, d, prev) {
    LOAD
 ══════════════════════════════════════════════════════ */
 async function load(month) {
+  // Tăng token — load cũ sẽ tự bỏ kết quả khi token không khớp
+  const token = ++loadToken;
+
   document.getElementById("rc").innerHTML = buildSkeleton();
   document.getElementById("footer").textContent = "";
-  destroyAll();
   try {
     const idx = MONTHS.indexOf(month);
     const [d, prev] = await Promise.all([
       fetchMonth(month),
       idx > 0 ? fetchMonth(MONTHS[idx-1]) : Promise.resolve(null)
     ]);
+    // Nếu user đã đổi sang tab khác trong lúc chờ → bỏ qua kết quả này
+    if (token !== loadToken) return;
+
     document.getElementById("rc").innerHTML = buildHTML(month, d, prev);
     await new Promise(r => setTimeout(r, 0));
     renderCharts(month, d, prev);
