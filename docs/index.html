@@ -621,14 +621,26 @@ function buildHTML(month, d, prev) {
 
       <!-- Sessions -->
       <div class="cbox">
-        <span class="cbox-title">Phiên truy cập (Triệu lượt)</span>
-        <div class="ph"><span>Chưa có dữ liệu</span><small>Cần kết nối GA4 — Bước 2D</small></div>
+        <span class="cbox-title">Phiên truy cập (Nghìn lượt)</span>
+        <div class="legend">
+          <div class="litem"><div class="ldot" style="background:${GREEN_BAR}"></div>App</div>
+          <div class="litem"><div class="ldot" style="background:${BLUE_WEB}"></div>Web</div>
+        </div>
+        <div style="height:190px;position:relative">
+          <canvas id="c_sessions" style="position:absolute;inset:0;width:100%!important;height:100%!important"></canvas>
+        </div>
       </div>
 
       <!-- CR -->
       <div class="cbox">
-        <span class="cbox-title">Tỷ lệ chuyển đổi</span>
-        <div class="ph"><span>Chưa có dữ liệu</span><small>CR = đơn hàng / sessions</small></div>
+        <span class="cbox-title">Tỷ lệ chuyển đổi (%)</span>
+        <div class="legend">
+          <div class="litem"><div class="ldot" style="background:${GREEN_BAR}"></div>App</div>
+          <div class="litem"><div class="ldot" style="background:${BLUE_WEB}"></div>Web</div>
+        </div>
+        <div style="height:190px;position:relative">
+          <canvas id="c_cr" style="position:absolute;inset:0;width:100%!important;height:100%!important"></canvas>
+        </div>
       </div>
 
     </div>
@@ -640,6 +652,9 @@ function buildHTML(month, d, prev) {
           <li>Doanh thu Web – App đóng góp <strong>${waS}% tổng doanh thu online</strong> — đạt <strong>${bil(waT)}</strong>.</li>
           <li>Web: <strong>${bil(d.web?.revenue||0)}</strong>${wChg!==null?` (${chgSpan(wChg)})`:""} ${d.web?.target?`· Target ${bil(d.web.target)} → đạt ${Math.round(d.web.revenue/d.web.target*100)}%`:""}.</li>
           <li>App: <strong>${bil(d.app?.revenue||0)}</strong>${aChg!==null?` (${chgSpan(aChg)})`:""} ${d.app?.target?`· Target ${bil(d.app.target)} → đạt ${Math.round(d.app.revenue/d.app.target*100)}%`:""}.</li>
+          ${d.cr ? `
+          <li>Phiên truy cập: Web <strong>${kk(d.cr.web.sessions||0)} sessions</strong>, App <strong>${kk(d.cr.app.sessions||0)} sessions</strong>.</li>
+          <li>Tỷ lệ chuyển đổi: Web <strong>${d.cr.web.rate !== null ? d.cr.web.rate+'%' : 'N/A'}</strong>, App <strong>${d.cr.app.rate !== null ? d.cr.app.rate+'%' : 'N/A'}</strong>.</li>` : ""}
           <li>Lũy kế lượt tải App: <strong>${kk(dl.cumulative||0)} lượt</strong> — Android <strong>${Math.round((dl.android||0)/cum*100)}%</strong>, iOS <strong>${Math.round((dl.ios||0)/cum*100)}%</strong>.</li>
         </ul>
       </div>
@@ -775,6 +790,103 @@ function renderCharts(month, d, prev) {
   });
   waChart.config._growthArrow = { value: prev ? waChg : null };
   charts["c_wa"] = waChart;
+
+  /* ── Bar: Sessions Web + App stacked ── */
+  const crData      = d.cr || {};
+  const prevCrData  = prev?.cr || {};
+
+  const sessWebData = prev
+    ? [parseFloat(((prevCrData.web?.sessions||0)/1000).toFixed(1)), parseFloat(((crData.web?.sessions||0)/1000).toFixed(1))]
+    : [parseFloat(((crData.web?.sessions||0)/1000).toFixed(1))];
+  const sessAppData = prev
+    ? [parseFloat(((prevCrData.app?.sessions||0)/1000).toFixed(1)), parseFloat(((crData.app?.sessions||0)/1000).toFixed(1))]
+    : [parseFloat(((crData.app?.sessions||0)/1000).toFixed(1))];
+
+  const sessChg = chg(
+    (crData.web?.sessions||0) + (crData.app?.sessions||0),
+    prev ? (prevCrData.web?.sessions||0) + (prevCrData.app?.sessions||0) : null
+  );
+
+  const sessChart = new Chart(document.getElementById("c_sessions"), {
+    type: "bar",
+    data: {
+      labels: xLbls,
+      datasets: [
+        {
+          label: "Web",
+          data : sessWebData,
+          backgroundColor: BLUE_WEB,
+          stack: "s",
+          borderRadius: 0,
+          borderSkipped: "bottom",
+        },
+        {
+          label: "App",
+          data : sessAppData,
+          backgroundColor: GREEN_BAR,
+          stack: "s",
+          borderRadius: { topLeft: 12, topRight: 12, bottomLeft: 0, bottomRight: 0 },
+          borderSkipped: false,
+        }
+      ]
+    },
+    options: {
+      ...baseOpts,
+      scales: {
+        x: baseOpts.scales.x,
+        y: { stacked: true, display: false }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => c.dataset.label + ": " + c.parsed.y.toFixed(1).replace(".",",") + "K sessions" } }
+      }
+    }
+  });
+  sessChart.config._growthArrow = { value: prev ? sessChg : null };
+  charts["c_sessions"] = sessChart;
+
+  /* ── Bar: CR Web + App grouped ── */
+  const crWebData = prev
+    ? [prevCrData.web?.rate ?? 0, crData.web?.rate ?? 0]
+    : [crData.web?.rate ?? 0];
+  const crAppData = prev
+    ? [prevCrData.app?.rate ?? 0, crData.app?.rate ?? 0]
+    : [crData.app?.rate ?? 0];
+
+  const crWebChg = chg(crData.web?.rate, prevCrData.web?.rate);
+  const crAppChg = chg(crData.app?.rate, prevCrData.app?.rate);
+
+  const crChart = new Chart(document.getElementById("c_cr"), {
+    type: "bar",
+    data: {
+      labels: xLbls,
+      datasets: [
+        {
+          label: "Web CR",
+          data : crWebData,
+          backgroundColor: BLUE_WEB,
+          borderRadius: { topLeft: 12, topRight: 12, bottomLeft: 0, bottomRight: 0 },
+          borderSkipped: false,
+        },
+        {
+          label: "App CR",
+          data : crAppData,
+          backgroundColor: GREEN_BAR,
+          borderRadius: { topLeft: 12, topRight: 12, bottomLeft: 0, bottomRight: 0 },
+          borderSkipped: false,
+        }
+      ]
+    },
+    options: {
+      ...baseOpts,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => c.dataset.label + ": " + c.parsed.y + "%" } }
+      }
+    }
+  });
+  // CR chart không dùng growthArrow vì có 2 datasets — dùng KPI text thay thế
+  charts["c_cr"] = crChart;
 
   /* ── Donut: lượt tải ── */
   const dl = d.appDownloads || {};
