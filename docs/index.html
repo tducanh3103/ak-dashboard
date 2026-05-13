@@ -83,6 +83,13 @@ body {
   border-bottom: 1px solid var(--border-light);
   padding: 10px 32px;
   display: flex; gap: 6px; flex-wrap: wrap;
+  position: sticky; top: 57px; z-index: 99;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+.tab-wrap.hide-tabs {
+  transform: translateY(-110%);
+  opacity: 0;
+  pointer-events: none;
 }
 .tab-btn {
   padding: 5px 18px; border-radius: 20px;
@@ -198,6 +205,31 @@ body {
 
 /* ─── STATE ──────────────────────────────────────────────── */
 .loading { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 13px; }
+
+/* Skeleton */
+@keyframes shimmer {
+  0%   { background-position: -800px 0; }
+  100% { background-position:  800px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 4px;
+}
+.sk-slide  { background: var(--white); margin-bottom: 28px; padding: 20px 24px; }
+.sk-header { height: 18px; width: 55%; margin-bottom: 20px; }
+.sk-row    { display: grid; gap: 16px; margin-bottom: 16px; }
+.sk-row3   { grid-template-columns: repeat(3,1fr); }
+.sk-row2   { grid-template-columns: 2fr 1.1fr; }
+.sk-box    { border: 1px solid #000; padding: 24px 14px 14px; }
+.sk-title  { height: 14px; width: 60%; margin-bottom: 16px; }
+.sk-chart  { height: 190px; }
+.sk-sum    { border: 1px solid #000; padding: 14px 16px; }
+.sk-line   { height: 12px; margin-bottom: 10px; }
+.sk-line.w80 { width: 80%; }
+.sk-line.w60 { width: 60%; }
+.sk-line.w70 { width: 70%; }
 .err-box { background: #fef2f2; border: 1px solid #fca5a5; padding: 12px 16px; font-size: 12px; color: #b91c1c; margin: 1rem 0; }
 .footer  { text-align: center; color: #bbb; font-size: 11px; padding: 20px 0 8px; }
 
@@ -524,6 +556,67 @@ function donutNote(labels, data, palette) {
   return `<table class="donut-note">${rows}</table>`;
 }
 
+/* ══════════════════════════════════════════════════════
+   SKELETON LOADING
+══════════════════════════════════════════════════════ */
+function buildSkeleton() {
+  return `
+<!-- Skeleton Slide 1 -->
+<div class="sk-slide">
+  <div class="skeleton sk-header"></div>
+  <div class="sk-row sk-row3">
+    <div class="sk-box">
+      <div class="skeleton sk-title"></div>
+      <div class="skeleton sk-chart"></div>
+    </div>
+    <div class="sk-box">
+      <div class="skeleton sk-title"></div>
+      <div class="skeleton sk-chart"></div>
+    </div>
+    <div class="sk-box">
+      <div class="skeleton sk-title"></div>
+      <div class="skeleton sk-chart"></div>
+    </div>
+  </div>
+  <div class="sk-sum">
+    <div class="skeleton sk-line w80"></div>
+    <div class="skeleton sk-line w60"></div>
+    <div class="skeleton sk-line w70"></div>
+  </div>
+</div>
+
+<!-- Skeleton Slide 2 -->
+<div class="sk-slide">
+  <div class="skeleton sk-header"></div>
+  <div class="sk-row sk-row3">
+    <div class="sk-box">
+      <div class="skeleton sk-title"></div>
+      <div class="skeleton sk-chart"></div>
+    </div>
+    <div class="sk-box">
+      <div class="skeleton sk-title"></div>
+      <div class="skeleton sk-chart"></div>
+    </div>
+    <div class="sk-box">
+      <div class="skeleton sk-title"></div>
+      <div class="skeleton sk-chart"></div>
+    </div>
+  </div>
+  <div class="sk-row sk-row2">
+    <div class="sk-sum">
+      <div class="skeleton sk-line w80"></div>
+      <div class="skeleton sk-line w60"></div>
+      <div class="skeleton sk-line w70"></div>
+      <div class="skeleton sk-line w60"></div>
+    </div>
+    <div class="sk-box">
+      <div class="skeleton sk-title"></div>
+      <div class="skeleton sk-chart"></div>
+    </div>
+  </div>
+</div>`;
+}
+  
 function buildHTML(month, d, prev) {
   const lbl   = LBL[month];
   const pi    = MONTHS.indexOf(month) - 1;
@@ -621,7 +714,7 @@ function buildHTML(month, d, prev) {
 
       <!-- Sessions -->
       <div class="cbox">
-        <span class="cbox-title">Phiên truy cập (Nghìn lượt)</span>
+        <span class="cbox-title">Phiên truy cập (Triệu lượt)</span>
         <div class="legend">
           <div class="litem"><div class="ldot" style="background:${GREEN_BAR}"></div>App</div>
           <div class="litem"><div class="ldot" style="background:${BLUE_WEB}"></div>Web</div>
@@ -796,11 +889,11 @@ function renderCharts(month, d, prev) {
   const prevCrData  = prev?.cr || {};
 
   const sessWebData = prev
-    ? [parseFloat(((prevCrData.web?.sessions||0)/1000).toFixed(1)), parseFloat(((crData.web?.sessions||0)/1000).toFixed(1))]
-    : [parseFloat(((crData.web?.sessions||0)/1000).toFixed(1))];
+    ? [parseFloat(((prevCrData.web?.sessions||0)/1e6).toFixed(2)), parseFloat(((crData.web?.sessions||0)/1e6).toFixed(2))]
+    : [parseFloat(((crData.web?.sessions||0)/1e6).toFixed(2))];
   const sessAppData = prev
-    ? [parseFloat(((prevCrData.app?.sessions||0)/1000).toFixed(1)), parseFloat(((crData.app?.sessions||0)/1000).toFixed(1))]
-    : [parseFloat(((crData.app?.sessions||0)/1000).toFixed(1))];
+    ? [parseFloat(((prevCrData.app?.sessions||0)/1e6).toFixed(2)), parseFloat(((crData.app?.sessions||0)/1e6).toFixed(2))]
+    : [parseFloat(((crData.app?.sessions||0)/1e6).toFixed(2))];
 
   const sessChg = chg(
     (crData.web?.sessions||0) + (crData.app?.sessions||0),
@@ -838,7 +931,7 @@ function renderCharts(month, d, prev) {
       },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: c => c.dataset.label + ": " + c.parsed.y.toFixed(1).replace(".",",") + "K sessions" } }
+        tooltip: { callbacks: { label: c => c.dataset.label + ": " + c.parsed.y.toFixed(2).replace(".",",") + "M sessions" } }
       }
     }
   });
@@ -921,7 +1014,8 @@ function renderCharts(month, d, prev) {
    LOAD
 ══════════════════════════════════════════════════════ */
 async function load(month) {
-  document.getElementById("rc").innerHTML = `<div class="loading">Đang tải ${LBL[month]}...</div>`;
+  document.getElementById("rc").innerHTML = buildSkeleton();
+  document.getElementById("footer").textContent = "";
   destroyAll();
   try {
     const idx = MONTHS.indexOf(month);
@@ -934,6 +1028,11 @@ async function load(month) {
     renderCharts(month, d, prev);
     document.getElementById("lastUpdated").textContent = "Cập nhật: " + new Date().toLocaleString("vi-VN");
     document.getElementById("footer").textContent = "Nguồn: Google Sheet — An Khang Dashboard · " + LBL[month];
+
+    // Prefetch tháng liền kề âm thầm để load nhanh khi user click tab
+    const idx = MONTHS.indexOf(month);
+    if (idx > 0)                   fetchMonth(MONTHS[idx - 1]).catch(() => {});
+    if (idx < MONTHS.length - 1)   fetchMonth(MONTHS[idx + 1]).catch(() => {});
   } catch(e) {
     document.getElementById("rc").innerHTML =
       `<div class="err-box">Lỗi tải dữ liệu: ${e.message}<br><small>Mở bằng Chrome/Safari có internet. Apps Script cần deploy với quyền "Anyone".</small></div>`;
@@ -968,6 +1067,31 @@ MONTHS.forEach(m => {
   nav.appendChild(b);
 });
 
+// Ẩn tab bar khi scroll xuống, hiện lại khi scroll lên
+(function() {
+  const tabWrap  = document.getElementById("tabNav");
+  let lastY      = 0;
+  let ticking    = false;
+
+  window.addEventListener("scroll", () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const currentY = window.scrollY;
+        if (currentY > lastY && currentY > 100) {
+          // Scroll xuống → ẩn
+          tabWrap.classList.add("hide-tabs");
+        } else {
+          // Scroll lên → hiện
+          tabWrap.classList.remove("hide-tabs");
+        }
+        lastY   = currentY;
+        ticking = false;
+      });
+      ticking = true;
+    }
+  });
+})();
+  
 load(current);
 </script>
 </body>
