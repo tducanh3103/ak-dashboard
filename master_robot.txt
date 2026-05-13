@@ -82,6 +82,15 @@ function run_Master_System_Ultimate() {
     Logger.log("📝 [T4]: Bỏ qua. (Chỉ cập nhật vào ngày 01)");
   }
 
+  // T5: GA4 Sessions (luôn chạy hằng ngày, lookback 3 ngày)
+  Logger.log("--------------------------------------------------");
+  try {
+    Logger.log("📡 [T5]: CẬP NHẬT GA4 SESSIONS");
+    sync_GA4Sessions();
+  } catch (e) {
+    Logger.log("❌ LỖI T5: " + e.message);
+  }
+
   Logger.log("==================================================");
   Logger.log("🏁 HỆ THỐNG ĐÃ HOÀN TẤT CHU TRÌNH!");
 }
@@ -507,13 +516,21 @@ function getReportData(month) {
   const ss          = SpreadsheetApp.getActiveSpreadsheet();
   const [year, mon] = month.split("-").map(Number);
 
-  // Aggregate từng tab
-  const online = aggregateTab(ss, "Online",    year, mon);
-  const web    = aggregateTab(ss, "WEB",       year, mon);
-  const app    = aggregateTab(ss, "APP",       year, mon);
-  const cc     = aggregateTab(ss, "CC",        year, mon);
-  const san    = aggregateTab(ss, "Sàn",       year, mon);
-  const aff    = aggregateTab(ss, "Affiliate", year, mon);
+  // ── Batch đọc tất cả tabs 1 lần ──────────────────────────
+  const TAB_NAMES = ["Online","WEB","APP","CC","Sàn","Affiliate","Danh mục","GA4_Web","GA4_App"];
+  const tabData   = {};
+  TAB_NAMES.forEach(name => {
+    const sh = ss.getSheetByName(name);
+    tabData[name] = sh ? sh.getDataRange().getValues() : [];
+  });
+
+  // ── Aggregate từng tab từ data đã đọc ────────────────────
+  const online = _aggTab(tabData["Online"],    year, mon);
+  const web    = _aggTab(tabData["WEB"],       year, mon);
+  const app    = _aggTab(tabData["APP"],       year, mon);
+  const cc     = _aggTab(tabData["CC"],        year, mon);
+  const san    = _aggTab(tabData["Sàn"],       year, mon);
+  const aff    = _aggTab(tabData["Affiliate"], year, mon);
 
   const total     = online.revenue || 1;
   const totalDays = new Date(year, mon, 0).getDate();
@@ -550,22 +567,21 @@ function getReportData(month) {
       Affiliate: { revenue: aff.revenue, percent: percent(aff.revenue) },
     },
 
-    categories  : aggregateCategories(ss, year, mon),
+    categories  : _aggCategories(tabData["Danh mục"], year, mon),
     appDownloads: getAppDownloads(year, mon),
+    cr          : _calcCRFromData(tabData["GA4_Web"], tabData["GA4_App"], year, mon, web.orders, app.orders),
   };
 }
 
-function aggregateTab(ss, sheetName, year, mon) {
-  const sh = ss.getSheetByName(sheetName);
-  if (!sh) return { revenue: 0, orders: 0, target: null };
-
-  const rows = sh.getDataRange().getValues();
+// ---------------------------------------------------------------------------
+// Aggregate 1 tab từ data đã đọc sẵn (không đọc sheet lại)
+// ---------------------------------------------------------------------------
+function _aggTab(rows, year, mon) {
   let revenue = 0, orders = 0, target = null;
 
   for (let i = 1; i < rows.length; i++) {
     const raw = rows[i][0];
     if (!raw) continue;
-
     const d = (raw instanceof Date) ? raw : new Date(raw);
     if (isNaN(d.getTime())) continue;
     if (d.getFullYear() !== year || d.getMonth() + 1 !== mon) continue;
@@ -581,17 +597,15 @@ function aggregateTab(ss, sheetName, year, mon) {
   return { revenue, orders, target };
 }
 
-function aggregateCategories(ss, year, mon) {
-  const sh = ss.getSheetByName("Danh mục");
-  if (!sh) return [];
-
-  const rows = sh.getDataRange().getValues();
-  const map  = {};
+// ---------------------------------------------------------------------------
+// Aggregate danh mục từ data đã đọc sẵn
+// ---------------------------------------------------------------------------
+function _aggCategories(rows, year, mon) {
+  const map = {};
 
   for (let i = 1; i < rows.length; i++) {
     const raw = rows[i][0];
     if (!raw) continue;
-
     const d = (raw instanceof Date) ? raw : new Date(raw);
     if (isNaN(d.getTime())) continue;
     if (d.getFullYear() !== year || d.getMonth() + 1 !== mon) continue;
@@ -614,56 +628,38 @@ function aggregateCategories(ss, year, mon) {
     .sort((a, b) => b.revenue - a.revenue);
 }
 
-function getAppDownloads(year, mon) {
-  try {
-    const APP_DOWNLOAD_ID = "1XQXPFbpD5DfBay-ESpJbtdqRopB0eWnky1MmSgTneFM";
-    const ss2       = SpreadsheetApp.openById(APP_DOWNLOAD_ID);
-    const shTotal   = ss2.getSheetByName("Tổng quan");
-    const shAndroid = ss2.getSheetByName("Android");
-    const shIOS     = ss2.getSheetByName("iOS");
-
-    function sumMonth(sh) {
-      if (!sh) return 0;
-      const rows = sh.getDataRange().getValues();
-      let total  = 0;
-      for (let i = 1; i < rows.length; i++) {
-        const raw = rows[i][0];
-        if (!raw) continue;
-        const d = (raw instanceof Date) ? raw : new Date(raw);
-        if (isNaN(d)) continue;
-        if (d.getFullYear() === year && d.getMonth() + 1 === mon) {
-          total += typeof rows[i][1] === "number" ? rows[i][1] : 0;
-        }
-      }
-      return total;
+// ---------------------------------------------------------------------------
+// Tính CR từ data GA4 đã đọc sẵn
+// ---------------------------------------------------------------------------
+function _calcCRFromData(webRows, appRows, year, mon, webOrders, appOrders) {
+  function getSessions(rows) {
+    let total = 0;
+    for (let i = 1; i < rows.length; i++) {
+      const raw = rows[i][0];
+      if (!raw) continue;
+      const d = (raw instanceof Date) ? raw : new Date(raw);
+      if (isNaN(d.getTime())) continue;
+      if (d.getFullYear() !== year || d.getMonth() + 1 !== mon) continue;
+      total += typeof rows[i][1] === "number" ? rows[i][1] : 0;
     }
-
-    function sumCumulative(sh) {
-      if (!sh) return 0;
-      const rows = sh.getDataRange().getValues();
-      let total  = 0;
-      for (let i = 1; i < rows.length; i++) {
-        const raw = rows[i][0];
-        if (!raw) continue;
-        const d = (raw instanceof Date) ? raw : new Date(raw);
-        if (isNaN(d)) continue;
-        if (d.getFullYear() < year || (d.getFullYear() === year && d.getMonth() + 1 <= mon)) {
-          total += typeof rows[i][1] === "number" ? rows[i][1] : 0;
-        }
-      }
-      return total;
-    }
-
-    return {
-      monthly   : sumMonth(shTotal),
-      cumulative: sumCumulative(shTotal),
-      android   : sumCumulative(shAndroid),
-      ios       : sumCumulative(shIOS),
-    };
-
-  } catch (err) {
-    return { monthly: 0, cumulative: 0, android: 0, ios: 0, error: err.message };
+    return total;
   }
+
+  const webSessions = getSessions(webRows);
+  const appSessions = getSessions(appRows);
+
+  return {
+    web: {
+      sessions: webSessions,
+      orders  : webOrders,
+      rate    : webSessions > 0 ? Math.round(webOrders / webSessions * 10000) / 100 : null,
+    },
+    app: {
+      sessions: appSessions,
+      orders  : appOrders,
+      rate    : appSessions > 0 ? Math.round(appOrders / appSessions * 10000) / 100 : null,
+    },
+  };
 }
 
 // ===========================================================================
@@ -932,4 +928,373 @@ function debugDateFormat() {
       " rev=" + row[1] + " target=" + row[4]
     );
   });
+}
+
+// ===========================================================================
+// T5: GA4 SESSIONS
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// GHI CHÚ KỸ THUẬT — GA4 Sessions Web
+// ---------------------------------------------------------------------------
+// Phương pháp: 2 queries (tổng - excluded) thay vì filter landing page trực tiếp
+// Lý do: filter theo landingPage dimension tạo ra hàng trăm nghìn rows (date × URL)
+//        gây timeout khi backfill. 2-query approach chạy trong vài giây.
+//
+// Logic: Sessions hệ SP = Tổng sessions - Sessions có landing page excluded
+// Excluded regex: (^/ban-tin-suc-khoe.*)|(^/hoat-chat.*)|(^/benh.*)|(^/trieu-chung.*)
+//
+// Sai số so với GA4 UI: ~vài trăm đến 1k sessions/ngày — chấp nhận được vì:
+//   1. GA4 data thresholding (API ẩn combinations traffic thấp vì privacy)
+//   2. (not set) landing page xử lý khác nhau giữa UI và API
+// Mục tiêu: theo dõi CR trend — sai số consistent, không ảnh hưởng xu hướng.
+// ---------------------------------------------------------------------------
+
+// --- CONFIG GA4 ---
+const GA4_CONFIG = {
+  WEB_PROPERTY_ID : "319910173",
+  APP_PROPERTY_ID : "500599006",
+  // Regex exclude landing page không thuộc hệ sản phẩm (Web)
+  WEB_EXCLUDE_REGEX: /^\/(ban-tin-suc-khoe|hoat-chat|benh|trieu-chung)/,
+  BACKFILL_START   : "2026-01-01",
+};
+
+// ---------------------------------------------------------------------------
+// Hàm chính T5 — gắn vào run_Master_System_Ultimate(), chạy hàng ngày
+// Dùng lookback 3 ngày (t-1, t-2, t-3) để đảm bảo không bỏ sót
+// ---------------------------------------------------------------------------
+function sync_GA4Sessions() {
+  const ssTarget = SpreadsheetApp.openById(CONFIG.TARGET_DASHBOARD_ID);
+  const today    = new Date();
+
+  // Tính ngày bắt đầu = t-3, kết thúc = t-1
+  const endDate   = new Date(today); endDate.setDate(today.getDate() - 1);
+  const startDate = new Date(today); startDate.setDate(today.getDate() - CONFIG.LOOKBACK_DAYS);
+
+  const startStr = formatGA4Date(startDate);
+  const endStr   = formatGA4Date(endDate);
+
+  Logger.log("📡 [T5] GA4 sync: " + startStr + " → " + endStr);
+
+  _syncGA4ToSheet(
+    ssTarget.getSheetByName("GA4_Web"),
+    GA4_CONFIG.WEB_PROPERTY_ID,
+    startStr, endStr,
+    true  // có filter landing page
+  );
+
+  _syncGA4ToSheet(
+    ssTarget.getSheetByName("GA4_App"),
+    GA4_CONFIG.APP_PROPERTY_ID,
+    startStr, endStr,
+    false // không filter
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Hàm backfill — chạy 1 LẦN DUY NHẤT thủ công
+// Lấy toàn bộ từ BACKFILL_START đến hôm qua (t-1)
+// ---------------------------------------------------------------------------
+function backfill_GA4Sessions() {
+  const ssTarget = SpreadsheetApp.openById(CONFIG.TARGET_DASHBOARD_ID);
+  const today    = new Date();
+  const endDate  = new Date(today); endDate.setDate(today.getDate() - 1);
+  const endStr   = formatGA4Date(endDate);
+
+  Logger.log("🔄 [BACKFILL] GA4: " + GA4_CONFIG.BACKFILL_START + " → " + endStr);
+
+  _syncGA4ToSheet(
+    ssTarget.getSheetByName("GA4_Web"),
+    GA4_CONFIG.WEB_PROPERTY_ID,
+    GA4_CONFIG.BACKFILL_START, endStr,
+    true
+  );
+
+  _syncGA4ToSheet(
+    ssTarget.getSheetByName("GA4_App"),
+    GA4_CONFIG.APP_PROPERTY_ID,
+    GA4_CONFIG.BACKFILL_START, endStr,
+    false
+  );
+
+  Logger.log("✅ [BACKFILL] Hoàn tất!");
+}
+
+// ---------------------------------------------------------------------------
+// Hàm nội bộ — query GA4 và ghi vào sheet
+// sheet       : Sheet object (GA4_Web hoặc GA4_App)
+// propertyId  : GA4 Property ID (string)
+// startStr    : "YYYY-MM-DD"
+// endStr      : "YYYY-MM-DD"
+// filterLanding: true = áp dụng exclude regex cho Web
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Hàm nội bộ — query GA4 và ghi vào sheet
+// Với Web: dùng 2 queries (tổng - excluded) thay vì pagination landing page
+// sheet        : Sheet object (GA4_Web hoặc GA4_App)
+// propertyId   : GA4 Property ID (string)
+// startStr     : "YYYY-MM-DD"
+// endStr       : "YYYY-MM-DD"
+// filterLanding: true = áp dụng exclude logic cho Web
+// ---------------------------------------------------------------------------
+function _syncGA4ToSheet(sheet, propertyId, startStr, endStr, filterLanding) {
+  if (!sheet) {
+    Logger.log("❌ Sheet không tồn tại!");
+    return;
+  }
+
+  const dateRange = [{ startDate: startStr, endDate: endStr }];
+
+  // ── Query 1: Tổng sessions theo ngày (không có landingPage dimension) ──
+  let totalByDate = {};
+  try {
+    const r1 = AnalyticsData.Properties.runReport({
+      dateRanges: dateRange,
+      dimensions: [{ name: "date" }],
+      metrics   : [{ name: "sessions" }],
+      limit     : 500,
+    }, "properties/" + propertyId);
+
+    (r1.rows || []).forEach(row => {
+      const d = row.dimensionValues[0].value;
+      totalByDate[d] = (totalByDate[d] || 0) + (parseInt(row.metricValues[0].value, 10) || 0);
+    });
+    Logger.log("   📊 Query1 (total): " + Object.keys(totalByDate).length + " ngày");
+  } catch (e) {
+    Logger.log("❌ GA4 Query1 lỗi: " + e.message);
+    return;
+  }
+
+  // ── Query 2 (chỉ Web): Sessions của các trang excluded ──
+  let excludedByDate = {};
+  if (filterLanding) {
+    try {
+      const r2 = AnalyticsData.Properties.runReport({
+        dateRanges       : dateRange,
+        dimensions       : [{ name: "date" }],
+        metrics          : [{ name: "sessions" }],
+        // Chỉ lấy các rows có landing page thuộc nhóm excluded
+        dimensionFilter  : {
+          filter: {
+            fieldName   : "landingPage",
+            stringFilter: {
+              matchType: "FULL_REGEXP",
+              value    : "(^/ban-tin-suc-khoe.*)|(^/hoat-chat.*)|(^/benh.*)|(^/trieu-chung.*)",
+            },
+          },
+        },
+        limit: 500,
+      }, "properties/" + propertyId);
+
+      (r2.rows || []).forEach(row => {
+        const d = row.dimensionValues[0].value;
+        excludedByDate[d] = (excludedByDate[d] || 0) + (parseInt(row.metricValues[0].value, 10) || 0);
+      });
+      Logger.log("   📊 Query2 (excluded): " + Object.keys(excludedByDate).length + " ngày");
+    } catch (e) {
+      Logger.log("❌ GA4 Query2 lỗi: " + e.message);
+      return;
+    }
+  }
+
+  // ── Tính sessions hệ sản phẩm = tổng - excluded ──
+  const sessionsByDate = {};
+  Object.keys(totalByDate).forEach(d => {
+    const total    = totalByDate[d]    || 0;
+    const excluded = excludedByDate[d] || 0;
+    const net      = total - excluded;
+    if (net > 0) sessionsByDate[d] = net;
+  });
+
+  if (Object.keys(sessionsByDate).length === 0) {
+    Logger.log("⚠️ Không có data GA4 cho khoảng " + startStr + " → " + endStr);
+    return;
+  }
+
+  // ── Đọc sheet hiện có để tìm row cần ghi ──
+  const lastRow   = Math.max(sheet.getLastRow(), 1);
+  const sheetData = sheet.getRange(1, 1, lastRow, 2).getValues();
+
+  // Build map: timestamp → rowIndex (1-based)
+  const existingMap = {};
+  for (let i = 1; i < sheetData.length; i++) {
+    const d = sheetData[i][0];
+    if (d instanceof Date) {
+      existingMap[normalizeDate(d)] = i + 1;
+    }
+  }
+
+  // ── Ghi từng ngày vào sheet ──
+  let countUpdate = 0;
+  const toAppend  = [];
+
+  Object.keys(sessionsByDate).sort().forEach(dateStr => {
+    const d        = _parseGA4Date(dateStr);
+    const ts       = normalizeDate(d);
+    const sessions = sessionsByDate[dateStr];
+
+    if (existingMap[ts]) {
+      sheet.getRange(existingMap[ts], 2).setValue(sessions);
+      countUpdate++;
+    } else {
+      toAppend.push([d, sessions]);
+    }
+  });
+
+  // Append batch các ngày mới
+  if (toAppend.length > 0) {
+    const appendStart = sheet.getLastRow() + 1;
+    sheet.getRange(appendStart, 1, toAppend.length, 2).setValues(toAppend);
+  }
+
+  Logger.log(
+    "   ✅ " + sheet.getName() +
+    ": updated=" + countUpdate +
+    ", appended=" + toAppend.length
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Helper: "20260115" → Date object
+// ---------------------------------------------------------------------------
+function _parseGA4Date(str) {
+  // str = "YYYYMMDD"
+  return new Date(
+    parseInt(str.substring(0, 4), 10),
+    parseInt(str.substring(4, 6), 10) - 1,
+    parseInt(str.substring(6, 8), 10)
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Helper: Date → "YYYY-MM-DD" cho GA4 API
+// ---------------------------------------------------------------------------
+function formatGA4Date(date) {
+  return Utilities.formatDate(date, Session.getScriptTimeZone(), "yyyy-MM-dd");
+}
+
+// ---------------------------------------------------------------------------
+// DEBUG: Xem GA4 Web trả về landing page dạng gì
+// Chỉ query 3 ngày gần nhất để nhanh
+// ---------------------------------------------------------------------------
+function debug_GA4WebLandingPage() {
+  const today   = new Date();
+  const endDate = new Date(today); endDate.setDate(today.getDate() - 1);
+  const startDate = new Date(today); startDate.setDate(today.getDate() - 3);
+
+  const request = {
+    dateRanges : [{ startDate: formatGA4Date(startDate), endDate: formatGA4Date(endDate) }],
+    dimensions : [{ name: "date" }, { name: "landingPage" }],
+    metrics    : [{ name: "sessions" }],
+    orderBys   : [{ metric: { metricName: "sessions" }, desc: true }],
+    limit      : 20, // chỉ lấy 20 rows đầu để xem
+  };
+
+  const response = AnalyticsData.Properties.runReport(
+    request,
+    "properties/" + GA4_CONFIG.WEB_PROPERTY_ID
+  );
+
+  if (!response.rows) {
+    Logger.log("Không có data");
+    return;
+  }
+
+  Logger.log("=== TOP 20 LANDING PAGES (Web) ===");
+  response.rows.forEach((row, i) => {
+    Logger.log(
+      "[" + i + "] date=" + row.dimensionValues[0].value +
+      " | landing=" + row.dimensionValues[1].value +
+      " | sessions=" + row.metricValues[0].value
+    );
+  });
+}
+
+// DEBUG: test getReportData CR
+function debug_CR() {
+  const month = "2026-03";
+  const ss          = SpreadsheetApp.getActiveSpreadsheet();
+  const [year, mon] = month.split("-").map(Number);
+
+  const web = aggregateTab(ss, "WEB", year, mon);
+  const app = aggregateTab(ss, "APP", year, mon);
+  const cr  = calcCR(ss, year, mon, web.orders, app.orders);
+
+  Logger.log("Web CR: " + cr.web.rate + "%");
+  Logger.log("Web sessions: " + cr.web.sessions);
+  Logger.log("Web orders: " + cr.web.orders);
+  Logger.log("App CR: " + cr.app.rate + "%");
+  Logger.log("App sessions: " + cr.app.sessions);
+  Logger.log("App orders: " + cr.app.orders);
+}
+
+// ---------------------------------------------------------------------------
+// getAppDownloads — đọc từ sheet riêng, giữ nguyên không tối ưu
+// (sheet này ở spreadsheet khác nên không batch được)
+// ---------------------------------------------------------------------------
+function getAppDownloads(year, mon) {
+  try {
+    const APP_DOWNLOAD_ID = "1XQXPFbpD5DfBay-ESpJbtdqRopB0eWnky1MmSgTneFM";
+    const ss2       = SpreadsheetApp.openById(APP_DOWNLOAD_ID);
+    const shTotal   = ss2.getSheetByName("Tổng quan");
+    const shAndroid = ss2.getSheetByName("Android");
+    const shIOS     = ss2.getSheetByName("iOS");
+
+    function sumMonth(sh) {
+      if (!sh) return 0;
+      const rows = sh.getDataRange().getValues();
+      let total  = 0;
+      for (let i = 1; i < rows.length; i++) {
+        const raw = rows[i][0];
+        if (!raw) continue;
+        const d = (raw instanceof Date) ? raw : new Date(raw);
+        if (isNaN(d)) continue;
+        if (d.getFullYear() === year && d.getMonth() + 1 === mon) {
+          total += typeof rows[i][1] === "number" ? rows[i][1] : 0;
+        }
+      }
+      return total;
+    }
+
+    function sumCumulative(sh) {
+      if (!sh) return 0;
+      const rows = sh.getDataRange().getValues();
+      let total  = 0;
+      for (let i = 1; i < rows.length; i++) {
+        const raw = rows[i][0];
+        if (!raw) continue;
+        const d = (raw instanceof Date) ? raw : new Date(raw);
+        if (isNaN(d)) continue;
+        if (d.getFullYear() < year || (d.getFullYear() === year && d.getMonth() + 1 <= mon)) {
+          total += typeof rows[i][1] === "number" ? rows[i][1] : 0;
+        }
+      }
+      return total;
+    }
+
+    return {
+      monthly   : sumMonth(shTotal),
+      cumulative: sumCumulative(shTotal),
+      android   : sumCumulative(shAndroid),
+      ios       : sumCumulative(shIOS),
+    };
+
+  } catch (err) {
+    return { monthly: 0, cumulative: 0, android: 0, ios: 0, error: err.message };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// aggregateTab + calcCR — giữ lại cho debug_CR() dùng
+// ---------------------------------------------------------------------------
+function aggregateTab(ss, sheetName, year, mon) {
+  const sh = ss.getSheetByName(sheetName);
+  if (!sh) return { revenue: 0, orders: 0, target: null };
+  return _aggTab(sh.getDataRange().getValues(), year, mon);
+}
+
+function calcCR(ss, year, mon, webOrders, appOrders) {
+  const webRows = (ss.getSheetByName("GA4_Web") || {getDataRange:()=>({getValues:()=>[]})}).getDataRange?.().getValues() || [];
+  const appRows = (ss.getSheetByName("GA4_App") || {getDataRange:()=>({getValues:()=>[]})}).getDataRange?.().getValues() || [];
+  return _calcCRFromData(webRows, appRows, year, mon, webOrders, appOrders);
 }
