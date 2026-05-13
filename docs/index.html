@@ -590,7 +590,18 @@ function buildSkeleton() {
         '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
         '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
       '</div>',
-      '<div class="sk-r
+      '<div class="sk-row sk-row2">',
+        '<div class="sk-sum">',
+          '<div class="skeleton sk-line w80"></div>',
+          '<div class="skeleton sk-line w60"></div>',
+          '<div class="skeleton sk-line w70"></div>',
+          '<div class="skeleton sk-line w60"></div>',
+        '</div>',
+        '<div class="sk-box"><div class="skeleton sk-title"></div><div class="skeleton sk-chart"></div></div>',
+      '</div>',
+    '</div>'
+  ].join('');
+}
   
 function buildHTML(month, d, prev) {
   const lbl   = LBL[month];
