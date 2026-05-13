@@ -463,10 +463,10 @@ let loadToken = 0; // Token để cancel load cũ khi đổi tab nhanh
 
 // Kiểm tra session + preload data tháng mặc định trong lúc user nhập password
 if (checkSession()) {
-  // Đã login trước đó → hiện dashboard thẳng
+  // Đã có session → hiện dashboard với skeleton 1s
   showDashboard();
 } else {
-  // Chưa login → âm thầm preload data trong lúc chờ
+  // Chưa login → preload âm thầm trong lúc user nhập password
   fetchMonth(current).catch(() => {});
 }  
 
