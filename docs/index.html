@@ -361,7 +361,7 @@ function buildHTML(month,d,prev){
   const lbl=LBL[month],pi=MONTHS.indexOf(month)-1,pl=pi>=0?LBL[MONTHS[pi]]:null;
   const tpct=d.targetRevenue?Math.round(d.totalRevenue/d.targetRevenue*100):null;
   const waT=(d.web?.revenue||0)+(d.app?.revenue||0), waS=pctOf(waT,d.totalRevenue);
-  const cats=d.categories||[], ch=d.channels||{}, dl=d.appDownloads||{}, cum=dl.retained||1;
+  const cats=d.categories||[], ch=d.channels||{}, dl=d.appDownloads||{}, cum=dl.cumulative||1;
   const thuoc=cats.find(c=>c.name==="Thuốc"), top3=cats.filter(c=>c.name!=="Thuốc").slice(0,3);
   const kL=["CC","Web","Sàn","App","Affiliate"], kD=[ch.CC?.percent||0,ch.Web?.percent||0,ch.San?.percent||0,ch.App?.percent||0,ch.Affiliate?.percent||0];
   function sp(v){if(v===null)return"";return `<span class="${v>=0?'up':'down'}">${sign(v)}${v}% so với ${pl}</span>`;}
@@ -418,8 +418,6 @@ function buildHTML(month,d,prev){
         <span style="display:flex;align-items:center;gap:5px"><div class="ldot" style="background:${GREEN_BAR}"></div>Android</span>
         <span><strong>${kk(dl.android||0)}</strong> <span style="color:var(--text-muted)">(${Math.round((dl.android||0)/(cum)*100)}%)</span></span>
       </div>
-    </div>
-      <div class="litem"><div class="ldot" style="background:${GREEN_BAR}"></div>Android: <strong style="margin-left:4px">${kk(dl.android||0)}</strong><span style="color:var(--text-muted);margin-left:4px">(${Math.round((dl.android||0)/((dl.ios||0)+(dl.android||0)||1)*100)}%)</span></div>
     </div>
   </div>
 </div>
