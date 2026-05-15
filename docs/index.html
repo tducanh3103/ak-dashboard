@@ -403,13 +403,16 @@ function buildHTML(month,d,prev){
     <li>Web: <strong>${bil(d.web?.revenue||0)}</strong>${wC!==null?` (${sp(wC)})`:""} ${d.web?.target?`· Target ${bil(d.web.target)} → đạt ${Math.round(d.web.revenue/d.web.target*100)}%`:""}.</li>
     <li>App: <strong>${bil(d.app?.revenue||0)}</strong>${aC!==null?` (${sp(aC)})`:""} ${d.app?.target?`· Target ${bil(d.app.target)} → đạt ${Math.round(d.app.revenue/d.app.target*100)}%`:""}.</li>
     ${d.cr?`<li>Phiên truy cập: Web <strong>${kk(d.cr.web.sessions||0)} sessions</strong>, App <strong>${kk(d.cr.app.sessions||0)} sessions</strong>.</li><li>Tỷ lệ chuyển đổi: Web <strong>${d.cr.web.rate!==null?d.cr.web.rate+"%":"N/A"}</strong>, App <strong>${d.cr.app.rate!==null?d.cr.app.rate+"%":"N/A"}</strong>.</li>`:""}
-    <li>Người dùng còn giữ app: <strong>${kk(dl.retained||0)} lượt</strong> — Android <strong>${Math.round((dl.android||0)/cum*100)}%</strong>, iOS <strong>${Math.round((dl.ios||0)/cum*100)}%</strong>.</li>
+    <li>Người dùng còn giữ app: <strong>${kk(dl.cumulative||0)} lượt</strong> — Android <strong>${Math.round((dl.android||0)/((dl.ios||0)+(dl.android||0)||1)*100)}%</strong>, iOS <strong>${Math.round((dl.ios||0)/((dl.ios||0)+(dl.android||0)||1)*100)}%</strong>.</li>
   </ul></div>
   <div class="cbox app-kpi"><span class="cbox-title">Lượt tải app</span>
     <canvas id="c_tai" width="140" height="140" style="display:block;width:140px;height:140px"></canvas>
-    <div class="big">${kk(dl.retained||0)}</div>
-    <div class="sub">Người dùng còn giữ app<br>lũy kế đến thời điểm báo cáo</div>
-    <div class="legend" style="justify-content:center;margin-top:4px"><div class="litem"><div class="ldot" style="background:${BLUE_WEB}"></div>iOS</div><div class="litem"><div class="ldot" style="background:${GREEN_BAR}"></div>Android</div></div>
+    <div class="big">${kk(dl.cumulative||0)}</div>
+    <div class="sub">Lũy kế lượt tải<br>kể từ khi ra mắt App</div>
+    <div class="legend" style="justify-content:center;margin-top:4px;flex-direction:column;align-items:flex-start;gap:4px">
+      <div class="litem"><div class="ldot" style="background:${BLUE_WEB}"></div>iOS: <strong style="margin-left:4px">${kk(dl.ios||0)}</strong><span style="color:var(--text-muted);margin-left:4px">(${Math.round((dl.ios||0)/((dl.ios||0)+(dl.android||0)||1)*100)}%)</span></div>
+      <div class="litem"><div class="ldot" style="background:${GREEN_BAR}"></div>Android: <strong style="margin-left:4px">${kk(dl.android||0)}</strong><span style="color:var(--text-muted);margin-left:4px">(${Math.round((dl.android||0)/((dl.ios||0)+(dl.android||0)||1)*100)}%)</span></div>
+    </div>
   </div>
 </div>
 </div></div>`;
