@@ -96,6 +96,12 @@ body { font-family: 'Helvetica Neue',HelveticaNeue,Helvetica,Arial,sans-serif; f
 .donut-note .dn-name { color: var(--text-muted); white-space: nowrap; }
 .loading { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 13px; }
 
+/* NHẬN ĐỊNH */
+.nhan-dinh { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-light); }
+.nhan-dinh-label { font-size: 10px; font-weight: 500; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px; }
+.nhan-dinh-text { font-size: 12px; font-weight: 300; color: var(--text-default); line-height: 1.7; white-space: pre-wrap; }
+.nhan-dinh-text em { font-style: italic; color: var(--text-muted); }
+  
 /* SKELETON */
 @keyframes shimmer { 0%{background-position:-800px 0} 100%{background-position:800px 0} }
 .skeleton { background: linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%); background-size: 800px 100%; animation: shimmer 1.4s infinite linear; border-radius: 4px; }
@@ -380,7 +386,12 @@ function buildHTML(month,d,prev){
   <li>Doanh thu ${lbl} đạt <strong>${bil(d.totalRevenue)}</strong>${rC!==null?`, ${sp(rC)}`:""}.  Doanh thu trung bình ngày đạt <strong>${mil(d.avgDaily)} đồng/ngày</strong> (${d.totalDays} ngày).</li>
   ${thuoc?`<li><strong>Nhóm Thuốc đóng góp ${thuoc.percent}%</strong> tổng doanh thu.${top3.length?" Ở nhóm Non thuốc, "+top3.map(c=>`<strong>${c.name} ${c.percent}%</strong>`).join(", ")+".":""}</li>`:""}
   <li>Về kênh bán hàng, <strong>${ch.CC?.percent||"?"}% doanh thu đến từ kênh Call center</strong>. Web và Sàn lần lượt đóng góp <strong>${ch.Web?.percent||"?"}%</strong> và <strong>${ch.San?.percent||"?"}%</strong>, App chiếm <strong>${ch.App?.percent||"?"}%</strong> doanh thu online.</li>
-</ul></div>
+</ul>
+<div class="nhan-dinh">
+  <div class="nhan-dinh-label">Nhận định</div>
+  <div class="nhan-dinh-text"><!-- NHẬN ĐỊNH SLIDE 1: chỉnh sửa nội dung bên dưới -->
+<em>Chưa có nhận định. Điền vào đây.</em></div>
+</div>
 </div></div>
 <div class="slide">${slideHeader(lbl)}<div class="slide-body">
 <div class="row3">
@@ -404,21 +415,27 @@ function buildHTML(month,d,prev){
     <li>App: <strong>${bil(d.app?.revenue||0)}</strong>${aC!==null?` (${sp(aC)})`:""} ${d.app?.target?`· Target ${bil(d.app.target)} → đạt ${Math.round(d.app.revenue/d.app.target*100)}%`:""}.</li>
     ${d.cr?`<li>Phiên truy cập: Web <strong>${kk(d.cr.web.sessions||0)} sessions</strong>, App <strong>${kk(d.cr.app.sessions||0)} sessions</strong>.</li><li>Tỷ lệ chuyển đổi: Web <strong>${d.cr.web.rate!==null?d.cr.web.rate+"%":"N/A"}</strong>, App <strong>${d.cr.app.rate!==null?d.cr.app.rate+"%":"N/A"}</strong>.</li>`:""}
     <li>Người dùng còn giữ app: <strong>${kk(dl.cumulative||0)}</strong> — Android <strong>${kk(dl.android||0)} (${Math.round((dl.android||0)/cum*100)}%)</strong>, iOS <strong>${kk(dl.ios||0)} (${Math.round((dl.ios||0)/cum*100)}%)</strong>.</li>
-  </ul></div>
+  </ul>
+  <div class="nhan-dinh">
+    <div class="nhan-dinh-label">Nhận định</div>
+    <div class="nhan-dinh-text"><!-- NHẬN ĐỊNH SLIDE 2: chỉnh sửa nội dung bên dưới -->
+<em>Chưa có nhận định. Điền vào đây.</em></div>
+  </div>
+  </div>
   <div class="cbox app-kpi"><span class="cbox-title">Người dùng còn giữ app</span>
-    <canvas id="c_tai" width="140" height="140" style="display:block;width:140px;height:140px"></canvas>
+    <canvas id="c_tai" width="150" height="160" style="display:block;width:150px;height:160px"></canvas>
     <div class="big">${kk(dl.cumulative||0)}</div>
     <div class="sub">Người dùng còn giữ app<br>trên thiết bị của họ</div>
-    <div style="margin-top:8px;width:100%">
-      <div class="litem" style="justify-content:space-between;margin-bottom:4px">
-        <span style="display:flex;align-items:center;gap:5px"><div class="ldot" style="background:${BLUE_WEB}"></div>iOS</span>
-        <span><strong>${kk(dl.ios||0)}</strong> <span style="color:var(--text-muted)">(${Math.round((dl.ios||0)/(cum)*100)}%)</span></span>
-      </div>
-      <div class="litem" style="justify-content:space-between">
-        <span style="display:flex;align-items:center;gap:5px"><div class="ldot" style="background:${GREEN_BAR}"></div>Android</span>
-        <span><strong>${kk(dl.android||0)}</strong> <span style="color:var(--text-muted)">(${Math.round((dl.android||0)/(cum)*100)}%)</span></span>
-      </div>
-    </div>
+    <table style="margin-top:8px;width:100%;border-collapse:collapse;font-size:11px;">
+      <tr>
+        <td style="padding:2px 0"><span style="display:flex;align-items:center;gap:5px"><div class="ldot" style="background:${BLUE_WEB}"></div>iOS</span></td>
+        <td style="text-align:right;padding:2px 0;white-space:nowrap"><strong>${kk(dl.ios||0)}</strong> <span style="color:var(--text-muted)">(${Math.round((dl.ios||0)/(cum)*100)}%)</span></td>
+      </tr>
+      <tr>
+        <td style="padding:2px 0"><span style="display:flex;align-items:center;gap:5px"><div class="ldot" style="background:${GREEN_BAR}"></div>Android</span></td>
+        <td style="text-align:right;padding:2px 0;white-space:nowrap"><strong>${kk(dl.android||0)}</strong> <span style="color:var(--text-muted)">(${Math.round((dl.android||0)/(cum)*100)}%)</span></td>
+      </tr>
+    </table>
   </div>
 </div>
 </div></div>`;
@@ -447,7 +464,7 @@ function renderCharts(month,d,prev){
     prev?chg((cr.web?.sessions||0)+(cr.app?.sessions||0),(pCr.web?.sessions||0)+(pCr.app?.sessions||0)):null);
   const crC=new Chart(document.getElementById("c_cr"),{type:"bar",data:{labels:xL,datasets:[{label:"Web CR",data:prev?[pCr.web?.rate??0,cr.web?.rate??0]:[cr.web?.rate??0],backgroundColor:BLUE_WEB,borderRadius:{topLeft:12,topRight:12,bottomLeft:0,bottomRight:0},borderSkipped:false},{label:"App CR",data:prev?[pCr.app?.rate??0,cr.app?.rate??0]:[cr.app?.rate??0],backgroundColor:GREEN_BAR,borderRadius:{topLeft:12,topRight:12,bottomLeft:0,bottomRight:0},borderSkipped:false}]},options:{...bO,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+": "+c.parsed.y+"%"}}}}});charts["c_cr"]=crC;
   const dl=d.appDownloads||{};if(charts["c_tai"]){charts["c_tai"].destroy();delete charts["c_tai"];}
-  const tC=document.getElementById("c_tai");tC.removeAttribute("width");tC.removeAttribute("height");tC.style.width="140px";tC.style.height="140px";
+  const tC=document.getElementById("c_tai");tC.removeAttribute("width");tC.removeAttribute("height");tC.style.width="150px";tC.style.height="160px";
   const dlTotal=(dl.ios||0)+(dl.android||0)||1;
   charts["c_tai"]=new Chart(tC,{type:"doughnut",data:{labels:["iOS","Android"],datasets:[{data:[dl.ios||0,dl.android||0],backgroundColor:[BLUE_WEB,GREEN_BAR],borderWidth:1,borderColor:"#fff"}]},options:{responsive:false,cutout:"60%",devicePixelRatio:4,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${Math.round(c.parsed/dlTotal*100)}%`}}}}});
 }
