@@ -98,7 +98,7 @@ body { font-family: 'Helvetica Neue',HelveticaNeue,Helvetica,Arial,sans-serif; f
 
 /* NHẬN ĐỊNH */
 .nhan-dinh { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e8e8e8; }
-.nhan-dinh-label { font-size: 10px; font-weight: 500; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+.nhan-dinh-label { font-size: 11px; font-weight: 500; text-transform: none; color: var(--black); letter-spacing: 0; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
 .nhan-dinh-text { font-size: 12px; font-weight: 300; color: var(--text-default); line-height: 1.7; white-space: pre-wrap; min-height: 0; }
 .nhan-dinh-edit-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 11px; padding: 0 4px; line-height: 1; opacity: 0.6; transition: opacity 0.15s; font-family: inherit; }
 .nhan-dinh-edit-btn:hover { opacity: 1; color: var(--green-primary); }
@@ -496,9 +496,9 @@ function buildHTML(month,d,prev){
     <li>App: <strong>${bil(d.app?.revenue||0)}</strong>${aC!==null?` (${sp(aC)})`:""} ${d.app?.target?`· Target ${bil(d.app.target)} → đạt ${Math.round(d.app.revenue/d.app.target*100)}%`:""}.</li>
     ${d.cr?`<li>Phiên truy cập: Web <strong>${kk(d.cr.web.sessions||0)} sessions</strong>, App <strong>${kk(d.cr.app.sessions||0)} sessions</strong>.</li><li>Tỷ lệ chuyển đổi: Web <strong>${d.cr.web.rate!==null?d.cr.web.rate+"%":"N/A"}</strong>, App <strong>${d.cr.app.rate!==null?d.cr.app.rate+"%":"N/A"}</strong>.</li>`:""}
     <li>Người dùng còn giữ app: <strong>${kk(dl.cumulative||0)}</strong> — Android <strong>${kk(dl.android||0)} (${Math.round((dl.android||0)/cum*100)}%)</strong>, iOS <strong>${kk(dl.ios||0)} (${Math.round((dl.ios||0)/cum*100)}%)</strong>.</li>
-  </ul>
-  <div class="nhan-dinh" id="nd_${month}_2"></div>
+  </ul></div>
   </div>
+<div class="nhan-dinh" id="nd_${month}_2" style="margin-top:16px"></div>
   </div>
   <div class="cbox app-kpi"><span class="cbox-title">Người dùng còn giữ app</span>
     <canvas id="c_tai" width="150" height="160" style="display:block;width:150px;height:160px"></canvas>
