@@ -1250,7 +1250,13 @@ function getAppDownloads(year, mon) {
         const d = (raw instanceof Date) ? raw : new Date(raw);
         if (isNaN(d)) continue;
         if (d.getFullYear() === year && d.getMonth() + 1 === mon) {
-          total += typeof rows[i][1] === "number" ? rows[i][1] : 0;
+          const val = rows[i][1];
+          if (typeof val === "number") {
+            total += val;
+          } else if (typeof val === "string") {
+            const parsed = parseFloat(val.replace(/,/g, ""));
+            if (!isNaN(parsed)) total += parsed;
+          }
         }
       }
       return total;
@@ -1266,7 +1272,35 @@ function getAppDownloads(year, mon) {
         const d = (raw instanceof Date) ? raw : new Date(raw);
         if (isNaN(d)) continue;
         if (d.getFullYear() < year || (d.getFullYear() === year && d.getMonth() + 1 <= mon)) {
-          total += typeof rows[i][1] === "number" ? rows[i][1] : 0;
+          const val = rows[i][1];
+          if (typeof val === "number") {
+            total += val;
+          } else if (typeof val === "string") {
+            const parsed = parseFloat(val.replace(/,/g, ""));
+            if (!isNaN(parsed)) total += parsed;
+          }
+        }
+      }
+      return total;
+    }
+
+    function sumRetained(sh) {
+      if (!sh) return 0;
+      const rows = sh.getDataRange().getValues();
+      let total  = 0;
+      for (let i = 1; i < rows.length; i++) {
+        const raw = rows[i][0];
+        if (!raw) continue;
+        const d = (raw instanceof Date) ? raw : new Date(raw);
+        if (isNaN(d)) continue;
+        if (d.getFullYear() < year || (d.getFullYear() === year && d.getMonth() + 1 <= mon)) {
+          const val = rows[i][5];
+          if (typeof val === "number") {
+            total += val;
+          } else if (typeof val === "string") {
+            const parsed = parseFloat(val.replace(/,/g, ""));
+            if (!isNaN(parsed)) total += parsed;
+          }
         }
       }
       return total;
@@ -1277,10 +1311,11 @@ function getAppDownloads(year, mon) {
       cumulative: sumCumulative(shTotal),
       android   : sumCumulative(shAndroid),
       ios       : sumCumulative(shIOS),
+      retained  : sumRetained(shTotal),
     };
 
   } catch (err) {
-    return { monthly: 0, cumulative: 0, android: 0, ios: 0, error: err.message };
+    return { monthly: 0, cumulative: 0, android: 0, ios: 0, retained: 0, error: err.message };
   }
 }
 
