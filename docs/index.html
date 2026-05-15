@@ -412,11 +412,11 @@ function buildHTML(month,d,prev){
     <div style="margin-top:8px;width:100%">
       <div class="litem" style="justify-content:space-between;margin-bottom:4px">
         <span style="display:flex;align-items:center;gap:5px"><div class="ldot" style="background:${BLUE_WEB}"></div>iOS</span>
-        <span><strong>${kk(dl.ios||0)}</strong> <span style="color:var(--text-muted)">(${Math.round((dl.ios||0)/cum*100)}%)</span></span>
+        <span><strong>${kk(dl.ios||0)}</strong> <span style="color:var(--text-muted)">(${Math.round((dl.ios||0)/(cum)*100)}%)</span></span>
       </div>
       <div class="litem" style="justify-content:space-between">
         <span style="display:flex;align-items:center;gap:5px"><div class="ldot" style="background:${GREEN_BAR}"></div>Android</span>
-        <span><strong>${kk(dl.android||0)}</strong> <span style="color:var(--text-muted)">(${Math.round((dl.android||0)/cum*100)}%)</span></span>
+        <span><strong>${kk(dl.android||0)}</strong> <span style="color:var(--text-muted)">(${Math.round((dl.android||0)/(cum)*100)}%)</span></span>
       </div>
     </div>
       <div class="litem"><div class="ldot" style="background:${GREEN_BAR}"></div>Android: <strong style="margin-left:4px">${kk(dl.android||0)}</strong><span style="color:var(--text-muted);margin-left:4px">(${Math.round((dl.android||0)/((dl.ios||0)+(dl.android||0)||1)*100)}%)</span></div>
