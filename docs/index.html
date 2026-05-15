@@ -97,10 +97,18 @@ body { font-family: 'Helvetica Neue',HelveticaNeue,Helvetica,Arial,sans-serif; f
 .loading { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 13px; }
 
 /* NHẬN ĐỊNH */
-.nhan-dinh { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-light); }
-.nhan-dinh-label { font-size: 10px; font-weight: 500; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px; }
-.nhan-dinh-text { font-size: 12px; font-weight: 300; color: var(--text-default); line-height: 1.7; white-space: pre-wrap; }
-.nhan-dinh-text em { font-style: italic; color: var(--text-muted); }
+.nhan-dinh { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e8e8e8; }
+.nhan-dinh-label { font-size: 10px; font-weight: 500; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+.nhan-dinh-text { font-size: 12px; font-weight: 300; color: var(--text-default); line-height: 1.7; white-space: pre-wrap; min-height: 0; }
+.nhan-dinh-edit-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 11px; padding: 0 4px; line-height: 1; opacity: 0.6; transition: opacity 0.15s; font-family: inherit; }
+.nhan-dinh-edit-btn:hover { opacity: 1; color: var(--green-primary); }
+.nhan-dinh-textarea { width: 100%; min-height: 80px; padding: 8px 10px; border: 1px solid var(--border-light); font-family: inherit; font-size: 12px; font-weight: 300; color: var(--text-default); line-height: 1.7; resize: vertical; outline: none; margin-top: 4px; }
+.nhan-dinh-textarea:focus { border-color: var(--green-primary); }
+.nhan-dinh-actions { display: flex; gap: 8px; margin-top: 6px; }
+.nhan-dinh-save { padding: 4px 14px; background: var(--green-primary); color: #fff; border: none; font-family: inherit; font-size: 11px; font-weight: 500; cursor: pointer; }
+.nhan-dinh-save:hover { opacity: 0.88; }
+.nhan-dinh-cancel { padding: 4px 14px; background: transparent; color: var(--text-muted); border: 1px solid var(--border-light); font-family: inherit; font-size: 11px; cursor: pointer; }
+.nhan-dinh-cancel:hover { border-color: var(--text-muted); }
   
 /* SKELETON */
 @keyframes shimmer { 0%{background-position:-800px 0} 100%{background-position:800px 0} }
@@ -227,6 +235,76 @@ const TEXT_DEF  = "#333333";
 const PAL_CAT   = ["#2E8B40","#61D836","#00CCA0","#1A6B2E","#00897B","#39B54A","#004444"];
 const PAL_KENH  = ["#61D836","#00A1FE","#00897B","#1A6B2E","#A3D9FF"];
 const cache = {}, charts = {};
+
+// ── PM SESSION ────────────────────────────────────────
+const PM_HASH      = "19b38edd284c6e5ba99fd855761233c2a089b5f22c04c16f1219fdee8a58902a";
+const PM_KEY       = "ak_pm";
+
+function isPM() {
+  try {
+    const raw = sessionStorage.getItem(PM_KEY);
+    if (!raw) return false;
+    return Date.now() < JSON.parse(raw).exp;
+  } catch { return false; }
+}
+function savePMSession() {
+  sessionStorage.setItem(PM_KEY, JSON.stringify({ exp: Date.now() + 86400000 }));
+}
+
+// Lưu/load nhận định theo tháng + slide
+function saveNhanDinh(month, slide, text) {
+  localStorage.setItem(`nhandinh_${month}_${slide}`, text);
+}
+function loadNhanDinh(month, slide) {
+  return localStorage.getItem(`nhandinh_${month}_${slide}`) || "";
+}
+
+// Render 1 section nhận định vào element có id
+function renderNhanDinh(month, slide) {
+  const id   = `nd_${month}_${slide}`;
+  const el   = document.getElementById(id);
+  if (!el) return;
+  const text = loadNhanDinh(month, slide);
+  const pm   = isPM();
+
+  if (!text && !pm) {
+    // Viewer thường + không có nội dung → ẩn hoàn toàn
+    el.style.display = "none";
+    return;
+  }
+
+  el.style.display = "";
+  el.innerHTML = `
+    <div class="nhan-dinh-label">
+      <span>Nhận định</span>
+      ${pm ? `<button class="nhan-dinh-edit-btn" onclick="editNhanDinh('${month}',${slide})">✏️ Chỉnh sửa</button>` : ""}
+    </div>
+    <div class="nhan-dinh-text" id="nd_text_${month}_${slide}">${text || '<span style="color:var(--text-muted);font-style:italic">Chưa có nhận định.</span>'}</div>
+  `;
+}
+
+function editNhanDinh(month, slide) {
+  const id   = `nd_${month}_${slide}`;
+  const el   = document.getElementById(id);
+  const text = loadNhanDinh(month, slide);
+
+  el.innerHTML = `
+    <div class="nhan-dinh-label"><span>Nhận định</span></div>
+    <textarea class="nhan-dinh-textarea" id="nd_input_${month}_${slide}" placeholder="Nhập nhận định cho ${LBL[month]}...">${text}</textarea>
+    <div class="nhan-dinh-actions">
+      <button class="nhan-dinh-save" onclick="saveNhanDinhUI('${month}',${slide})">Lưu</button>
+      <button class="nhan-dinh-cancel" onclick="renderNhanDinh('${month}',${slide})">Hủy</button>
+    </div>
+  `;
+  document.getElementById(`nd_input_${month}_${slide}`).focus();
+}
+
+function saveNhanDinhUI(month, slide) {
+  const val = document.getElementById(`nd_input_${month}_${slide}`).value.trim();
+  saveNhanDinh(month, slide, val);
+  renderNhanDinh(month, slide);
+}  
+  
 const _now = new Date();
 const _prev = new Date(_now.getFullYear(), _now.getMonth()-1, 1);
 const _pk = _prev.getFullYear()+"-"+String(_prev.getMonth()+1).padStart(2,"0");
@@ -257,8 +335,15 @@ async function handleLogin() {
   const val = document.getElementById("pwInput").value;
   if (!val) return;
   const hash = await sha256(val);
-  if (hash === PW_HASH) {
-    saveSession(); showDashboard();
+  if (hash === PM_HASH) {
+    // PM login — lưu cả 2 session
+    saveSession();
+    savePMSession();
+    showDashboard();
+  } else if (hash === PW_HASH) {
+    // Viewer login
+    saveSession();
+    showDashboard();
   } else {
     const box = document.getElementById("pwBox");
     document.getElementById("pwErr").textContent = "Mật khẩu không đúng, thử lại nhé!";
@@ -387,12 +472,8 @@ function buildHTML(month,d,prev){
   ${thuoc?`<li><strong>Nhóm Thuốc đóng góp ${thuoc.percent}%</strong> tổng doanh thu.${top3.length?" Ở nhóm Non thuốc, "+top3.map(c=>`<strong>${c.name} ${c.percent}%</strong>`).join(", ")+".":""}</li>`:""}
   <li>Về kênh bán hàng, <strong>${ch.CC?.percent||"?"}% doanh thu đến từ kênh Call center</strong>. Web và Sàn lần lượt đóng góp <strong>${ch.Web?.percent||"?"}%</strong> và <strong>${ch.San?.percent||"?"}%</strong>, App chiếm <strong>${ch.App?.percent||"?"}%</strong> doanh thu online.</li>
 </ul>
-<div class="nhan-dinh">
-  <div class="nhan-dinh-label">Nhận định</div>
-  <div class="nhan-dinh-text"><!-- NHẬN ĐỊNH SLIDE 1: chỉnh sửa nội dung bên dưới -->
-<em>Chưa có nhận định. Điền vào đây.</em></div>
-</div>
-</div></div>
+<div class="nhan-dinh" id="nd_${month}_1"></div>
+</div></div></div>
 <div class="slide">${slideHeader(lbl)}<div class="slide-body">
 <div class="row3">
   <div class="cbox"><span class="cbox-title">Doanh thu Web – App (Tỷ đồng)</span>
@@ -416,10 +497,7 @@ function buildHTML(month,d,prev){
     ${d.cr?`<li>Phiên truy cập: Web <strong>${kk(d.cr.web.sessions||0)} sessions</strong>, App <strong>${kk(d.cr.app.sessions||0)} sessions</strong>.</li><li>Tỷ lệ chuyển đổi: Web <strong>${d.cr.web.rate!==null?d.cr.web.rate+"%":"N/A"}</strong>, App <strong>${d.cr.app.rate!==null?d.cr.app.rate+"%":"N/A"}</strong>.</li>`:""}
     <li>Người dùng còn giữ app: <strong>${kk(dl.cumulative||0)}</strong> — Android <strong>${kk(dl.android||0)} (${Math.round((dl.android||0)/cum*100)}%)</strong>, iOS <strong>${kk(dl.ios||0)} (${Math.round((dl.ios||0)/cum*100)}%)</strong>.</li>
   </ul>
-  <div class="nhan-dinh">
-    <div class="nhan-dinh-label">Nhận định</div>
-    <div class="nhan-dinh-text"><!-- NHẬN ĐỊNH SLIDE 2: chỉnh sửa nội dung bên dưới -->
-<em>Chưa có nhận định. Điền vào đây.</em></div>
+  <div class="nhan-dinh" id="nd_${month}_2"></div>
   </div>
   </div>
   <div class="cbox app-kpi"><span class="cbox-title">Người dùng còn giữ app</span>
@@ -482,6 +560,8 @@ async function load(month){
     renderCharts(month,d,prev);
     document.getElementById("lastUpdated").textContent="Cập nhật: "+new Date().toLocaleString("vi-VN");
     document.getElementById("footer").textContent="Nguồn: Google Sheet — An Khang Dashboard · "+LBL[month];
+    renderNhanDinh(month, 1);
+    renderNhanDinh(month, 2);
     // Prefetch tuần tự từ gần → xa, SAU khi tháng hiện tại xong
     (function prefetchRest(){
       const ci=MONTHS.indexOf(month),max=Math.max(ci,MONTHS.length-1-ci);
