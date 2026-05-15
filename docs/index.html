@@ -496,9 +496,8 @@ function buildHTML(month,d,prev){
     <li>App: <strong>${bil(d.app?.revenue||0)}</strong>${aC!==null?` (${sp(aC)})`:""} ${d.app?.target?`· Target ${bil(d.app.target)} → đạt ${Math.round(d.app.revenue/d.app.target*100)}%`:""}.</li>
     ${d.cr?`<li>Phiên truy cập: Web <strong>${kk(d.cr.web.sessions||0)} sessions</strong>, App <strong>${kk(d.cr.app.sessions||0)} sessions</strong>.</li><li>Tỷ lệ chuyển đổi: Web <strong>${d.cr.web.rate!==null?d.cr.web.rate+"%":"N/A"}</strong>, App <strong>${d.cr.app.rate!==null?d.cr.app.rate+"%":"N/A"}</strong>.</li>`:""}
     <li>Người dùng còn giữ app: <strong>${kk(dl.cumulative||0)}</strong> — Android <strong>${kk(dl.android||0)} (${Math.round((dl.android||0)/cum*100)}%)</strong>, iOS <strong>${kk(dl.ios||0)} (${Math.round((dl.ios||0)/cum*100)}%)</strong>.</li>
-  </ul></div>
-  </div>
-<div class="nhan-dinh" id="nd_${month}_2" style="margin-top:16px"></div>
+  </ul>
+  <div class="nhan-dinh" id="nd_${month}_2"></div>
   </div>
   <div class="cbox app-kpi"><span class="cbox-title">Người dùng còn giữ app</span>
     <canvas id="c_tai" width="150" height="160" style="display:block;width:150px;height:160px"></canvas>
@@ -507,11 +506,11 @@ function buildHTML(month,d,prev){
     <table style="margin-top:8px;width:100%;border-collapse:collapse;font-size:11px;">
       <tr>
         <td style="padding:2px 0"><span style="display:flex;align-items:center;gap:5px"><div class="ldot" style="background:${BLUE_WEB}"></div>iOS</span></td>
-        <td style="text-align:right;padding:2px 0;white-space:nowrap"><strong>${kk(dl.ios||0)}</strong> <span style="color:var(--text-muted)">(${Math.round((dl.ios||0)/(cum)*100)}%)</span></td>
+        <td style="text-align:right;padding:2px 0;white-space:nowrap"><strong>${kk(dl.ios||0)}</strong> <span style="color:var(--text-muted)">(${Math.round((dl.ios||0)/cum*100)}%)</span></td>
       </tr>
       <tr>
         <td style="padding:2px 0"><span style="display:flex;align-items:center;gap:5px"><div class="ldot" style="background:${GREEN_BAR}"></div>Android</span></td>
-        <td style="text-align:right;padding:2px 0;white-space:nowrap"><strong>${kk(dl.android||0)}</strong> <span style="color:var(--text-muted)">(${Math.round((dl.android||0)/(cum)*100)}%)</span></td>
+        <td style="text-align:right;padding:2px 0;white-space:nowrap"><strong>${kk(dl.android||0)}</strong> <span style="color:var(--text-muted)">(${Math.round((dl.android||0)/cum*100)}%)</span></td>
       </tr>
     </table>
   </div>
