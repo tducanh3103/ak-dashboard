@@ -503,13 +503,13 @@ function buildHTML(month,d,prev){
     <canvas id="c_tai" width="150" height="160" style="display:block;width:150px;height:160px"></canvas>
     <div class="big">${kk(dl.cumulative||0)}</div>
     <div class="sub">Người dùng còn giữ app<br>trên thiết bị của họ</div>
-    <table style="margin-top:8px;width:100%;border-collapse:collapse;font-size:11px;">
+    <table style="margin-top:8px;width:auto;border-collapse:collapse;font-size:11px;align-self:stretch;">
       <tr>
-        <td style="padding:2px 0"><span style="display:flex;align-items:center;gap:5px"><div class="ldot" style="background:${BLUE_WEB}"></div>iOS</span></td>
+        <td style="padding:2px 8px 2px 0"><span style="display:flex;align-items:center;gap:5px"><div class="ldot" style="background:${BLUE_WEB}"></div>iOS</span></td>
         <td style="text-align:right;padding:2px 0;white-space:nowrap"><strong>${kk(dl.ios||0)}</strong> <span style="color:var(--text-muted)">(${Math.round((dl.ios||0)/cum*100)}%)</span></td>
       </tr>
       <tr>
-        <td style="padding:2px 0"><span style="display:flex;align-items:center;gap:5px"><div class="ldot" style="background:${GREEN_BAR}"></div>Android</span></td>
+        <td style="padding:2px 8px 2px 0"><span style="display:flex;align-items:center;gap:5px"><div class="ldot" style="background:${GREEN_BAR}"></div>Android</span></td>
         <td style="text-align:right;padding:2px 0;white-space:nowrap"><strong>${kk(dl.android||0)}</strong> <span style="color:var(--text-muted)">(${Math.round((dl.android||0)/cum*100)}%)</span></td>
       </tr>
     </table>
