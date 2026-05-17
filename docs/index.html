@@ -252,26 +252,26 @@ function savePMSession() {
 }
 
 // Lưu/load nhận định theo tháng + slide
-function saveNhanDinh(month, slide, text) {
-  localStorage.setItem(`nhandinh_${month}_${slide}`, text);
-}
-function loadNhanDinh(month, slide) {
-  return localStorage.getItem(`nhandinh_${month}_${slide}`) || "";
+// ── NHẬN ĐỊNH — sync với GAS ─────────────────────────
+const ND_CACHE = {}; // cache nhận định đã load từ GAS theo tháng
+
+function loadNhanDinhFromData(month, d) {
+  // Gọi sau khi fetchMonth xong — lưu vào cache
+  if (d.nhanDinh) ND_CACHE[month] = d.nhanDinh;
 }
 
-// Render 1 section nhận định vào element có id
+function getNhanDinh(month, slide) {
+  return (ND_CACHE[month] && ND_CACHE[month][slide]) || "";
+}
+
 function renderNhanDinh(month, slide) {
-  const id   = `nd_${month}_${slide}`;
-  const el   = document.getElementById(id);
+  const id  = `nd_${month}_${slide}`;
+  const el  = document.getElementById(id);
   if (!el) return;
-  const text = loadNhanDinh(month, slide);
+  const text = getNhanDinh(month, slide);
   const pm   = isPM();
 
-  if (!text && !pm) {
-    // Viewer thường + không có nội dung → ẩn hoàn toàn
-    el.style.display = "none";
-    return;
-  }
+  if (!text && !pm) { el.style.display = "none"; return; }
 
   el.style.display = "";
   el.innerHTML = `
@@ -279,15 +279,14 @@ function renderNhanDinh(month, slide) {
       <span>Nhận định</span>
       ${pm ? `<button class="nhan-dinh-edit-btn" onclick="editNhanDinh('${month}',${slide})">✏️ Chỉnh sửa</button>` : ""}
     </div>
-    <div class="nhan-dinh-text" id="nd_text_${month}_${slide}">${text || '<span style="color:var(--text-muted);font-style:italic">Chưa có nhận định.</span>'}</div>
+    <div class="nhan-dinh-text">${text || '<span style="color:var(--text-muted);font-style:italic">Chưa có nhận định.</span>'}</div>
   `;
 }
 
 function editNhanDinh(month, slide) {
   const id   = `nd_${month}_${slide}`;
   const el   = document.getElementById(id);
-  const text = loadNhanDinh(month, slide);
-
+  const text = getNhanDinh(month, slide);
   el.innerHTML = `
     <div class="nhan-dinh-label"><span>Nhận định</span></div>
     <textarea class="nhan-dinh-textarea" id="nd_input_${month}_${slide}" placeholder="Nhập nhận định cho ${LBL[month]}...">${text}</textarea>
@@ -299,10 +298,38 @@ function editNhanDinh(month, slide) {
   document.getElementById(`nd_input_${month}_${slide}`).focus();
 }
 
-function saveNhanDinhUI(month, slide) {
+async function saveNhanDinhUI(month, slide) {
   const val = document.getElementById(`nd_input_${month}_${slide}`).value.trim();
-  saveNhanDinh(month, slide, val);
-  renderNhanDinh(month, slide);
+  const btn = document.querySelector(`#nd_${month}_${slide} .nhan-dinh-save`);
+
+  // Hiện trạng thái đang lưu
+  if (btn) { btn.textContent = "Đang lưu..."; btn.disabled = true; }
+
+  try {
+    const res = await fetch(API, {
+      method : "POST",
+      headers: { "Content-Type": "application/json" },
+      body   : JSON.stringify({
+        token  : PM_HASH,
+        month,
+        slide  : String(slide),
+        content: val,
+      }),
+    });
+    const json = await res.json();
+    if (json.ok) {
+      // Cập nhật cache và render lại
+      if (!ND_CACHE[month]) ND_CACHE[month] = {};
+      ND_CACHE[month][slide] = val;
+      renderNhanDinh(month, slide);
+    } else {
+      alert("Lỗi lưu nhận định: " + (json.error || "Unknown"));
+      if (btn) { btn.textContent = "Lưu"; btn.disabled = false; }
+    }
+  } catch (err) {
+    alert("Lỗi kết nối: " + err.message);
+    if (btn) { btn.textContent = "Lưu"; btn.disabled = false; }
+  }
 }  
   
 const _now = new Date();
@@ -554,6 +581,8 @@ async function load(month){
     const idx=MONTHS.indexOf(month);
     const [d,prev]=await Promise.all([fetchMonth(month),idx>0?fetchMonth(MONTHS[idx-1]):Promise.resolve(null)]);
     if(token!==loadToken) return;
+    loadNhanDinhFromData(month, d);
+    if (prev) loadNhanDinhFromData(MONTHS[MONTHS.indexOf(month)-1], prev);
     document.getElementById("rc").innerHTML=buildHTML(month,d,prev);
     await new Promise(r=>setTimeout(r,0));
     renderCharts(month,d,prev);
