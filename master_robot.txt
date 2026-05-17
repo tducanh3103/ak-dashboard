@@ -517,7 +517,7 @@ function getReportData(month) {
   const [year, mon] = month.split("-").map(Number);
 
   // ── Batch đọc tất cả tabs 1 lần ──────────────────────────
-  const TAB_NAMES = ["Online","WEB","APP","CC","Sàn","Affiliate","Danh mục","GA4_Web","GA4_App"];
+  const TAB_NAMES = ["Online","WEB","APP","CC","Sàn","Affiliate","Danh mục","GA4_Web","GA4_App","Nhận định"];
   const tabData   = {};
   TAB_NAMES.forEach(name => {
     const sh = ss.getSheetByName(name);
@@ -568,6 +568,7 @@ function getReportData(month) {
     },
 
     categories  : _aggCategories(tabData["Danh mục"], year, mon),
+    nhanDinh    : _aggNhanDinh(tabData["Nhận định"], year, mon),
     appDownloads: getAppDownloads(year, mon),
     cr          : _calcCRFromData(tabData["GA4_Web"], tabData["GA4_App"], year, mon, web.orders, app.orders),
   };
@@ -1240,29 +1241,8 @@ function getAppDownloads(year, mon) {
     const shAndroid = ss2.getSheetByName("Android");
     const shIOS     = ss2.getSheetByName("iOS");
 
-    function sumMonth(sh) {
-      if (!sh) return 0;
-      const rows = sh.getDataRange().getValues();
-      let total  = 0;
-      for (let i = 1; i < rows.length; i++) {
-        const raw = rows[i][0];
-        if (!raw) continue;
-        const d = (raw instanceof Date) ? raw : new Date(raw);
-        if (isNaN(d)) continue;
-        if (d.getFullYear() === year && d.getMonth() + 1 === mon) {
-          const val = rows[i][1];
-          if (typeof val === "number") {
-            total += val;
-          } else if (typeof val === "string") {
-            const parsed = parseFloat(val.replace(/,/g, ""));
-            if (!isNaN(parsed)) total += parsed;
-          }
-        }
-      }
-      return total;
-    }
-
-    function sumCumulative(sh) {
+    // Lũy kế cột F = "Lượt giữ app" (tải mới - xóa)
+    function sumRetainedFromColF(sh) {
       if (!sh) return 0;
       const rows = sh.getDataRange().getValues();
       let total  = 0;
@@ -1272,28 +1252,7 @@ function getAppDownloads(year, mon) {
         const d = (raw instanceof Date) ? raw : new Date(raw);
         if (isNaN(d)) continue;
         if (d.getFullYear() < year || (d.getFullYear() === year && d.getMonth() + 1 <= mon)) {
-          const val = rows[i][1];
-          if (typeof val === "number") {
-            total += val;
-          } else if (typeof val === "string") {
-            const parsed = parseFloat(val.replace(/,/g, ""));
-            if (!isNaN(parsed)) total += parsed;
-          }
-        }
-      }
-      return total;
-    }
-
-    function sumRetained(sh) {
-      if (!sh) return 0;
-      const rows = sh.getDataRange().getValues();
-      let total  = 0;
-      for (let i = 1; i < rows.length; i++) {
-        const raw = rows[i][0];
-        if (!raw) continue;
-        const d = (raw instanceof Date) ? raw : new Date(raw);
-        if (isNaN(d)) continue;
-        if (d.getFullYear() < year || (d.getFullYear() === year && d.getMonth() + 1 <= mon)) {
+          // Cột F = index 5 (đếm từ 0)
           const val = rows[i][5];
           if (typeof val === "number") {
             total += val;
@@ -1307,15 +1266,13 @@ function getAppDownloads(year, mon) {
     }
 
     return {
-      monthly   : sumMonth(shTotal),
-      cumulative: sumCumulative(shTotal),
-      android   : sumCumulative(shAndroid),
-      ios       : sumCumulative(shIOS),
-      retained  : sumRetained(shTotal),
+      cumulative: sumRetainedFromColF(shTotal),   // Người giữ app (cột F Tổng quan)
+      android   : sumRetainedFromColF(shAndroid), // Android giữ app (cột F Android)
+      ios       : sumRetainedFromColF(shIOS),     // iOS giữ app (cột F iOS)
     };
 
   } catch (err) {
-    return { monthly: 0, cumulative: 0, android: 0, ios: 0, retained: 0, error: err.message };
+    return { cumulative: 0, android: 0, ios: 0, error: err.message };
   }
 }
 
@@ -1332,4 +1289,89 @@ function calcCR(ss, year, mon, webOrders, appOrders) {
   const webRows = (ss.getSheetByName("GA4_Web") || {getDataRange:()=>({getValues:()=>[]})}).getDataRange?.().getValues() || [];
   const appRows = (ss.getSheetByName("GA4_App") || {getDataRange:()=>({getValues:()=>[]})}).getDataRange?.().getValues() || [];
   return _calcCRFromData(webRows, appRows, year, mon, webOrders, appOrders);
+}
+
+// ---------------------------------------------------------------------------
+// Aggregate nhận định từ tab "Nhận định"
+// ---------------------------------------------------------------------------
+function _aggNhanDinh(rows, year, mon) {
+  const result = {};
+  for (let i = 1; i < rows.length; i++) {
+    const raw = rows[i][0];
+    if (!raw) continue;
+    const d = (raw instanceof Date) ? raw : new Date(raw);
+    if (isNaN(d.getTime())) continue;
+    if (d.getFullYear() !== year || d.getMonth() + 1 !== mon) continue;
+    const slide   = parseInt(rows[i][1], 10);
+    const content = rows[i][2] ? rows[i][2].toString().trim() : "";
+    if (slide && content) result[slide] = content;
+  }
+  return result; // { 1: "nội dung slide 1", 2: "nội dung slide 2" }
+}
+
+// ===========================================================================
+// NHẬN ĐỊNH — POST endpoint
+// ===========================================================================
+function doPost(e) {
+  try {
+    const body    = JSON.parse(e.postData.contents);
+    const token   = body.token   || "";
+    const month   = body.month   || "";
+    const slide   = body.slide   || "";
+    const content = body.content ?? "";
+
+    // Kiểm tra PM token
+    const PM_HASH = "19b38edd284c6e5ba99fd855761233c2a089b5f22c04c16f1219fdee8a58902a";
+    if (token !== PM_HASH) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ error: "Unauthorized" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (!month || !slide) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ error: "Missing month or slide" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const ss    = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("Nhận định");
+    if (!sheet) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ error: "Sheet không tồn tại" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const data    = sheet.getDataRange().getValues();
+    const slideN  = parseInt(slide, 10);
+
+    // Tìm row đã có → update
+    for (let i = 1; i < data.length; i++) {
+      const rowMonth = data[i][0] instanceof Date
+        ? Utilities.formatDate(data[i][0], Session.getScriptTimeZone(), "yyyy-MM")
+        : String(data[i][0]).substring(0, 7);
+      const rowSlide = parseInt(data[i][1], 10);
+      if (rowMonth === month && rowSlide === slideN) {
+        sheet.getRange(i + 1, 3).setValue(content);
+        return ContentService
+          .createTextOutput(JSON.stringify({ ok: true, action: "updated" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
+    // Không có → append row mới
+    // Tạo date object ngày 01 của tháng
+    const parts   = month.split("-");
+    const dateVal = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+    sheet.appendRow([dateVal, slideN, content]);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: true, action: "created" }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 }
