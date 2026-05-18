@@ -955,23 +955,6 @@ function formatTargetDate(date) {
 }
 
 // ===========================================================================
-// DEBUG
-// ===========================================================================
-
-function debugDateFormat() {
-  const ss   = SpreadsheetApp.getActiveSpreadsheet();
-  const sh   = ss.getSheetByName("Online");
-  const rows = sh.getRange(90, 1, 10, 5).getValues();
-  rows.forEach((row, i) => {
-    Logger.log(
-      "Row " + (89 + i) +
-      ": type=[" + typeof row[0] + "] val=[" + row[0] + "]" +
-      " rev=" + row[1] + " target=" + row[4]
-    );
-  });
-}
-
-// ===========================================================================
 // T5: GA4 SESSIONS
 // ===========================================================================
 
@@ -1194,60 +1177,6 @@ function formatGA4Date(date) {
 }
 
 // ---------------------------------------------------------------------------
-// DEBUG: Xem GA4 Web trả về landing page dạng gì
-// ---------------------------------------------------------------------------
-function debug_GA4WebLandingPage() {
-  const today   = new Date();
-  const endDate = new Date(today); endDate.setDate(today.getDate() - 1);
-  const startDate = new Date(today); startDate.setDate(today.getDate() - 3);
-
-  const request = {
-    dateRanges : [{ startDate: formatGA4Date(startDate), endDate: formatGA4Date(endDate) }],
-    dimensions : [{ name: "date" }, { name: "landingPage" }],
-    metrics    : [{ name: "sessions" }],
-    orderBys   : [{ metric: { metricName: "sessions" }, desc: true }],
-    limit      : 20,
-  };
-
-  const response = AnalyticsData.Properties.runReport(
-    request,
-    "properties/" + GA4_CONFIG.WEB_PROPERTY_ID
-  );
-
-  if (!response.rows) {
-    Logger.log("Không có data");
-    return;
-  }
-
-  Logger.log("=== TOP 20 LANDING PAGES (Web) ===");
-  response.rows.forEach((row, i) => {
-    Logger.log(
-      "[" + i + "] date=" + row.dimensionValues[0].value +
-      " | landing=" + row.dimensionValues[1].value +
-      " | sessions=" + row.metricValues[0].value
-    );
-  });
-}
-
-// DEBUG: test getReportData CR
-function debug_CR() {
-  const month = "2026-03";
-  const ss          = SpreadsheetApp.getActiveSpreadsheet();
-  const [year, mon] = month.split("-").map(Number);
-
-  const web = aggregateTab(ss, "WEB", year, mon);
-  const app = aggregateTab(ss, "APP", year, mon);
-  const cr  = calcCR(ss, year, mon, web.orders, app.orders);
-
-  Logger.log("Web CR: " + cr.web.rate + "%");
-  Logger.log("Web sessions: " + cr.web.sessions);
-  Logger.log("Web orders: " + cr.web.orders);
-  Logger.log("App CR: " + cr.app.rate + "%");
-  Logger.log("App sessions: " + cr.app.sessions);
-  Logger.log("App orders: " + cr.app.orders);
-}
-
-// ---------------------------------------------------------------------------
 // getAppDownloads — đọc từ sheet riêng, giữ nguyên không tối ưu
 // (sheet này ở spreadsheet khác nên không batch được)
 // ---------------------------------------------------------------------------
@@ -1291,21 +1220,6 @@ function getAppDownloads(year, mon) {
   } catch (err) {
     return { cumulative: 0, android: 0, ios: 0, error: err.message };
   }
-}
-
-// ---------------------------------------------------------------------------
-// aggregateTab + calcCR — giữ lại cho debug_CR() dùng
-// ---------------------------------------------------------------------------
-function aggregateTab(ss, sheetName, year, mon) {
-  const sh = ss.getSheetByName(sheetName);
-  if (!sh) return { revenue: 0, orders: 0, target: null };
-  return _aggTab(sh.getDataRange().getValues(), year, mon);
-}
-
-function calcCR(ss, year, mon, webOrders, appOrders) {
-  const webRows = (ss.getSheetByName("GA4_Web") || {getDataRange:()=>({getValues:()=>[]})}).getDataRange?.().getValues() || [];
-  const appRows = (ss.getSheetByName("GA4_App") || {getDataRange:()=>({getValues:()=>[]})}).getDataRange?.().getValues() || [];
-  return _calcCRFromData(webRows, appRows, year, mon, webOrders, appOrders);
 }
 
 // ===========================================================================
