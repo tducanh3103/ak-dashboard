@@ -109,7 +109,7 @@ body { font-family: 'Helvetica Neue',HelveticaNeue,Helvetica,Arial,sans-serif; f
 .nhan-dinh-save:hover { opacity: 0.88; }
 .nhan-dinh-cancel { padding: 4px 14px; background: transparent; color: var(--text-muted); border: 1px solid var(--border-light); font-family: inherit; font-size: 11px; cursor: pointer; }
 .nhan-dinh-cancel:hover { border-color: var(--text-muted); }
-  
+
 /* SKELETON */
 @keyframes shimmer { 0%{background-position:-800px 0} 100%{background-position:800px 0} }
 .skeleton { background: linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%); background-size: 800px 100%; animation: shimmer 1.4s infinite linear; border-radius: 4px; }
@@ -154,9 +154,29 @@ body { font-family: 'Helvetica Neue',HelveticaNeue,Helvetica,Arial,sans-serif; f
   .pw-box { border-radius: 0; box-shadow: none; width: 100%; min-height: 100dvh; padding: 60px 28px 40px; justify-content: center; }
 }
 
+/* SLIDE 3 — DỰ ÁN LỚN */
+.projects-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.proj-col { border: var(--border-box); padding: 16px 16px 12px; }
+.proj-col-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+.proj-count { font-size: 11px; font-weight: 300; color: var(--text-muted); text-transform: none; letter-spacing: 0; }
+.proj-item { display: flex; align-items: flex-start; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border-light); gap: 10px; }
+.proj-item:last-child { border-bottom: none; padding-bottom: 0; }
+.proj-left { display: flex; align-items: flex-start; gap: 8px; flex: 1; min-width: 0; }
+.proj-num  { font-size: 11px; color: var(--text-muted); font-weight: 300; min-width: 18px; padding-top: 2px; flex-shrink: 0; }
+.proj-name { font-size: 12px; font-weight: 300; color: var(--text-default); line-height: 1.55; }
+.proj-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+/* Tag badge — 3 loại cố định + fallback xám cho loại mới */
+.proj-tag     { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+.proj-tag.dt  { background: #E8F5E9; color: #2E8B40; }   /* Doanh thu  */
+.proj-tag.tf  { background: #E3F2FD; color: #1565C0; }   /* Traffic     */
+.proj-tag.tt  { background: #FFF3E0; color: #E65100; }   /* Thuận tiện  */
+.proj-tag.def { background: #F5F5F5; color: #757575; }   /* Tag lạ → xám, không lỗi */
+.proj-timeline { font-size: 10px; color: var(--text-muted); font-weight: 300; white-space: nowrap; }
+.proj-empty { font-size: 12px; color: var(--text-muted); font-style: italic; padding: 10px 0 4px; font-weight: 300; }
+
 /* RESPONSIVE */
 @media (max-width: 700px) {
-  :root { --header-h: 53px; } /* header mobile thấp hơn — tab-wrap tự adjust theo */
+  :root { --header-h: 53px; }
   .header { padding: 10px 16px; flex-wrap: wrap; gap: 6px; }
   .header-brand { font-size: 11px; }
   .logo-wrap { width: 28px; height: 28px; }
@@ -170,6 +190,7 @@ body { font-family: 'Helvetica Neue',HelveticaNeue,Helvetica,Arial,sans-serif; f
   .cbox { padding: 28px 12px 12px; }
   .cbox-title { font-size: 12px; left: 10px; }
   .summary li { font-size: 11px; }
+  .projects-grid { grid-template-columns: 1fr; }
 }
 @media (min-width: 701px) and (max-width: 960px) {
   .row3 { grid-template-columns: 1fr 1fr; }
@@ -237,8 +258,8 @@ const PAL_KENH  = ["#61D836","#00A1FE","#00897B","#1A6B2E","#A3D9FF"];
 const cache = {}, charts = {};
 
 // ── PM SESSION ────────────────────────────────────────
-const PM_HASH      = "19b38edd284c6e5ba99fd855761233c2a089b5f22c04c16f1219fdee8a58902a";
-const PM_KEY       = "ak_pm";
+const PM_HASH  = "19b38edd284c6e5ba99fd855761233c2a089b5f22c04c16f1219fdee8a58902a";
+const PM_KEY   = "ak_pm";
 
 function isPM() {
   try {
@@ -251,12 +272,10 @@ function savePMSession() {
   sessionStorage.setItem(PM_KEY, JSON.stringify({ exp: Date.now() + 86400000 }));
 }
 
-// Lưu/load nhận định theo tháng + slide
 // ── NHẬN ĐỊNH — sync với GAS ─────────────────────────
-const ND_CACHE = {}; // cache nhận định đã load từ GAS theo tháng
+const ND_CACHE = {};
 
 function loadNhanDinhFromData(month, d) {
-  // Gọi sau khi fetchMonth xong — lưu vào cache
   if (d.nhanDinh) ND_CACHE[month] = d.nhanDinh;
 }
 
@@ -302,7 +321,6 @@ async function saveNhanDinhUI(month, slide) {
   const val = document.getElementById(`nd_input_${month}_${slide}`).value.trim();
   const btn = document.querySelector(`#nd_${month}_${slide} .nhan-dinh-save`);
 
-  // Hiện trạng thái đang lưu
   if (btn) { btn.textContent = "Đang lưu..."; btn.disabled = true; }
 
   try {
@@ -318,7 +336,6 @@ async function saveNhanDinhUI(month, slide) {
     });
     const json = await res.json();
     if (json.ok) {
-      // Cập nhật cache và render lại
       if (!ND_CACHE[month]) ND_CACHE[month] = {};
       ND_CACHE[month][slide] = val;
       renderNhanDinh(month, slide);
@@ -330,8 +347,21 @@ async function saveNhanDinhUI(month, slide) {
     alert("Lỗi kết nối: " + err.message);
     if (btn) { btn.textContent = "Lưu"; btn.disabled = false; }
   }
-}  
-  
+}
+
+// ── HELPER: render tag badge cho Slide 3 ─────────────
+// Tag lạ (chưa định nghĩa) → màu xám mặc định, không lỗi
+function projTag(tag) {
+  if (!tag) return "";
+  const map = {
+    "doanh thu"  : "dt",
+    "traffic"    : "tf",
+    "thuận tiện" : "tt",
+  };
+  const cls = map[tag.toLowerCase()] || "def";
+  return `<span class="proj-tag ${cls}">${tag}</span>`;
+}
+
 const _now = new Date();
 const _prev = new Date(_now.getFullYear(), _now.getMonth()-1, 1);
 const _pk = _prev.getFullYear()+"-"+String(_prev.getMonth()+1).padStart(2,"0");
@@ -353,7 +383,6 @@ function showDashboard() {
   document.getElementById("pwScreen").style.display = "none";
   document.getElementById("rc").innerHTML = buildSkeleton();
   document.getElementById("footer").textContent = "";
-  // Skeleton nhân tạo: 400ms nếu data đã cache, 1000ms nếu chưa
   const hasCache = cache[current] || (window._earlyCache && window._earlyCache[current]);
   setTimeout(() => load(current), hasCache ? 400 : 1000);
 }
@@ -363,12 +392,10 @@ async function handleLogin() {
   if (!val) return;
   const hash = await sha256(val);
   if (hash === PM_HASH) {
-    // PM login — lưu cả 2 session
     saveSession();
     savePMSession();
     showDashboard();
   } else if (hash === PW_HASH) {
-    // Viewer login
     saveSession();
     showDashboard();
   } else {
@@ -471,7 +498,8 @@ function buildSkeleton(){
   return [
     '<div class="sk-msg">Số liệu đang được tổng hợp — sẽ sẵn sàng trong vài giây ☕</div>',
     `<div class="sk-slide"><div class="skeleton sk-header"></div><div class="sk-row sk-row3">${box.repeat(3)}</div><div class="sk-sum"><div class="skeleton sk-line w80"></div><div class="skeleton sk-line w60"></div><div class="skeleton sk-line w70"></div></div></div>`,
-    `<div class="sk-slide"><div class="skeleton sk-header"></div><div class="sk-row sk-row3">${box.repeat(3)}</div><div class="sk-row sk-row2"><div class="sk-sum"><div class="skeleton sk-line w80"></div><div class="skeleton sk-line w60"></div><div class="skeleton sk-line w70"></div><div class="skeleton sk-line w60"></div></div>${box}</div></div>`
+    `<div class="sk-slide"><div class="skeleton sk-header"></div><div class="sk-row sk-row3">${box.repeat(3)}</div><div class="sk-row sk-row2"><div class="sk-sum"><div class="skeleton sk-line w80"></div><div class="skeleton sk-line w60"></div><div class="skeleton sk-line w70"></div><div class="skeleton sk-line w60"></div></div>${box}</div></div>`,
+    `<div class="sk-slide"><div class="skeleton sk-header"></div><div class="sk-row" style="grid-template-columns:1fr 1fr">${box}${box}</div></div>`
   ].join('');
 }
 
@@ -484,6 +512,37 @@ function buildHTML(month,d,prev){
   const kL=["CC","Web","Sàn","App","Affiliate"], kD=[ch.CC?.percent||0,ch.Web?.percent||0,ch.San?.percent||0,ch.App?.percent||0,ch.Affiliate?.percent||0];
   function sp(v){if(v===null)return"";return `<span class="${v>=0?'up':'down'}">${sign(v)}${v}% so với ${pl}</span>`;}
   const rC=chg(d.totalRevenue,prev?.totalRevenue),wC=chg(d.web?.revenue,prev?.web?.revenue),aC=chg(d.app?.revenue,prev?.app?.revenue);
+
+  // ── Slide 3: Dự án lớn ────────────────────────────────
+  const proj        = d.projects || { done: [], plan: [] };
+  const nextMonIdx  = MONTHS.indexOf(month) + 1;
+  const nextMonLbl  = nextMonIdx < MONTHS.length ? LBL[MONTHS[nextMonIdx]] : "tháng tới";
+
+  // Render 1 cột dự án (done hoặc plan)
+  function projCol(title, count, items) {
+    const rows = items.length === 0
+      ? `<div class="proj-empty">Chưa có dữ liệu</div>`
+      : items.map(p => `
+        <div class="proj-item">
+          <div class="proj-left">
+            <span class="proj-num">${p.stt}.</span>
+            <span class="proj-name">${p.name}</span>
+          </div>
+          <div class="proj-right">
+            ${projTag(p.tag)}
+            ${p.timeline ? `<span class="proj-timeline">${p.timeline}</span>` : ""}
+          </div>
+        </div>`).join("");
+    return `
+      <div class="proj-col">
+        <div class="proj-col-title">
+          ${title}
+          <span class="proj-count">${count}</span>
+        </div>
+        ${rows}
+      </div>`;
+  }
+
   return `
 <div class="slide">${slideHeader(lbl)}<div class="slide-body">
 <div class="row3">
@@ -501,6 +560,7 @@ function buildHTML(month,d,prev){
 </ul>
 <div class="nhan-dinh" id="nd_${month}_1"></div>
 </div></div></div>
+
 <div class="slide">${slideHeader(lbl)}<div class="slide-body">
 <div class="row3">
   <div class="cbox"><span class="cbox-title">Doanh thu Web – App (Tỷ đồng)</span>
@@ -542,6 +602,14 @@ function buildHTML(month,d,prev){
     </table>
   </div>
 </div>
+</div></div>
+
+<div class="slide">${slideHeader(lbl)}<div class="slide-body">
+<div class="projects-grid">
+  ${projCol(`Dự án lớn ${lbl}`, `${proj.done.length} dự án`, proj.done)}
+  ${projCol(`Dự án lớn ${nextMonLbl}`, `Kế hoạch`, proj.plan)}
+</div>
+<div class="nhan-dinh" id="nd_${month}_3"></div>
 </div></div>`;
 }
 
@@ -588,8 +656,10 @@ async function load(month){
     renderCharts(month,d,prev);
     document.getElementById("lastUpdated").textContent="Cập nhật: "+new Date().toLocaleString("vi-VN");
     document.getElementById("footer").textContent="Nguồn: Google Sheet — An Khang Dashboard · "+LBL[month];
+    // Render nhận định cả 3 slides
     renderNhanDinh(month, 1);
     renderNhanDinh(month, 2);
+    renderNhanDinh(month, 3);
     // Prefetch tuần tự từ gần → xa, SAU khi tháng hiện tại xong
     (function prefetchRest(){
       const ci=MONTHS.indexOf(month),max=Math.max(ci,MONTHS.length-1-ci);
