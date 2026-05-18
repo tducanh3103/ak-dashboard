@@ -13,8 +13,9 @@ window._earlyCache = {};
   const API    = "https://script.google.com/macros/s/AKfycbzJaaAxK9d3rUT3RNWaoFRsWOS-KbVZM7pkSG3CJxAxIOVX-8_kYDCe55EeeifVpEqUOQ/exec";
   const MONTHS = ["2026-01","2026-02","2026-03","2026-04","2026-05"];
   const now    = new Date();
-  const prev   = new Date(now.getFullYear(), now.getMonth()-1, 1);
-  const pk     = prev.getFullYear()+"-"+String(prev.getMonth()+1).padStart(2,"0");
+  // Tháng hiển thị = tháng hiện tại - 1 (không show tháng hiện tại)
+  const disp   = new Date(now.getFullYear(), now.getMonth()-1, 1);
+  const pk     = disp.getFullYear()+"-"+String(disp.getMonth()+1).padStart(2,"0");
   const target = MONTHS.includes(pk) ? pk : MONTHS[MONTHS.length-1];
   const idx    = MONTHS.indexOf(target);
   const toFetch= [target];
@@ -96,19 +97,10 @@ body { font-family: 'Helvetica Neue',HelveticaNeue,Helvetica,Arial,sans-serif; f
 .donut-note .dn-name { color: var(--text-muted); white-space: nowrap; }
 .loading { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 13px; }
 
-/* NHẬN ĐỊNH */
+/* NHẬN ĐỊNH — chỉ display, không edit */
 .nhan-dinh { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e8e8e8; }
-.nhan-dinh-label { font-size: 13px; font-weight: 500; text-transform: none; color: var(--black); letter-spacing: 0; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
-.nhan-dinh-text { font-size: 12px; font-weight: 300; color: var(--text-default); line-height: 1.7; white-space: pre-wrap; min-height: 0; }
-.nhan-dinh-edit-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 11px; padding: 0 4px; line-height: 1; opacity: 0.6; transition: opacity 0.15s; font-family: inherit; }
-.nhan-dinh-edit-btn:hover { opacity: 1; color: var(--green-primary); }
-.nhan-dinh-textarea { width: 100%; min-height: 80px; padding: 8px 10px; border: 1px solid var(--border-light); font-family: inherit; font-size: 12px; font-weight: 300; color: var(--text-default); line-height: 1.7; resize: vertical; outline: none; margin-top: 4px; }
-.nhan-dinh-textarea:focus { border-color: var(--green-primary); }
-.nhan-dinh-actions { display: flex; gap: 8px; margin-top: 6px; }
-.nhan-dinh-save { padding: 4px 14px; background: var(--green-primary); color: #fff; border: none; font-family: inherit; font-size: 11px; font-weight: 500; cursor: pointer; }
-.nhan-dinh-save:hover { opacity: 0.88; }
-.nhan-dinh-cancel { padding: 4px 14px; background: transparent; color: var(--text-muted); border: 1px solid var(--border-light); font-family: inherit; font-size: 11px; cursor: pointer; }
-.nhan-dinh-cancel:hover { border-color: var(--text-muted); }
+.nhan-dinh-label { font-size: 13px; font-weight: 500; color: var(--black); margin-bottom: 8px; }
+.nhan-dinh-text { font-size: 12px; font-weight: 300; color: var(--text-default); line-height: 1.7; white-space: pre-wrap; }
 
 /* SKELETON */
 @keyframes shimmer { 0%{background-position:-800px 0} 100%{background-position:800px 0} }
@@ -157,7 +149,8 @@ body { font-family: 'Helvetica Neue',HelveticaNeue,Helvetica,Arial,sans-serif; f
 /* SLIDE 3 — DỰ ÁN LỚN */
 .projects-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .proj-col { border: var(--border-box); padding: 16px 16px 12px; }
-.proj-col-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+/* Tiêu đề cột dự án đổi sang màu đen */
+.proj-col-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--black); letter-spacing: 0.05em; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
 .proj-count { font-size: 11px; font-weight: 300; color: var(--text-muted); text-transform: none; letter-spacing: 0; }
 .proj-item { display: flex; align-items: flex-start; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border-light); gap: 10px; }
 .proj-item:last-child { border-bottom: none; padding-bottom: 0; }
@@ -209,7 +202,7 @@ body { font-family: 'Helvetica Neue',HelveticaNeue,Helvetica,Arial,sans-serif; f
       </div>
       <div class="pw-brand">
         <span class="gn">Nhà thuốc An Khang Online</span>
-        <span>Báo cáo sức khỏe định kỳ</span>
+        <span>Báo cáo sức khỏe định kỳ hàng tháng</span>
       </div>
     </div>
     <div class="pw-title">Nhập mật khẩu để xem báo cáo</div>
@@ -229,7 +222,7 @@ body { font-family: 'Helvetica Neue',HelveticaNeue,Helvetica,Arial,sans-serif; f
     </div>
     <div class="header-brand">
       <span class="name">Nhà thuốc An Khang Online</span>
-      <span class="sub">Báo cáo sức khỏe định kỳ</span>
+      <span class="sub">Báo cáo sức khỏe định kỳ hàng tháng</span>
     </div>
   </div>
   <div class="header-ts" id="lastUpdated"></div>
@@ -257,22 +250,17 @@ const PAL_CAT   = ["#2E8B40","#61D836","#00CCA0","#1A6B2E","#00897B","#39B54A","
 const PAL_KENH  = ["#61D836","#00A1FE","#00897B","#1A6B2E","#A3D9FF"];
 const cache = {}, charts = {};
 
-// ── PM SESSION ────────────────────────────────────────
-const PM_HASH  = "19b38edd284c6e5ba99fd855761233c2a089b5f22c04c16f1219fdee8a58902a";
-const PM_KEY   = "ak_pm";
+// ── TÍNH THÁNG HIỂN THỊ (luôn = tháng hiện tại - 1) ─────
+const _now  = new Date();
+// VISIBLE_MONTHS: chỉ show đến tháng n-1, ẩn tháng hiện tại
+const _curYYYYMM = _now.getFullYear() + "-" + String(_now.getMonth()+1).padStart(2,"0");
+const VISIBLE_MONTHS = MONTHS.filter(m => m < _curYYYYMM);
 
-function isPM() {
-  try {
-    const raw = sessionStorage.getItem(PM_KEY);
-    if (!raw) return false;
-    return Date.now() < JSON.parse(raw).exp;
-  } catch { return false; }
-}
-function savePMSession() {
-  sessionStorage.setItem(PM_KEY, JSON.stringify({ exp: Date.now() + 86400000 }));
-}
+// Tháng default = tháng mới nhất trong VISIBLE_MONTHS
+let current = VISIBLE_MONTHS.length > 0 ? VISIBLE_MONTHS[VISIBLE_MONTHS.length-1] : MONTHS[MONTHS.length-2];
+let loadToken = 0;
 
-// ── NHẬN ĐỊNH — sync với GAS ─────────────────────────
+// ── NHẬN ĐỊNH — chỉ hiển thị, không edit ─────────────────
 const ND_CACHE = {};
 
 function loadNhanDinhFromData(month, d) {
@@ -283,90 +271,29 @@ function getNhanDinh(month, slide) {
   return (ND_CACHE[month] && ND_CACHE[month][slide]) || "";
 }
 
+// Render nhận định — display only, không có nút edit
 function renderNhanDinh(month, slide) {
   const id  = `nd_${month}_${slide}`;
   const el  = document.getElementById(id);
   if (!el) return;
   const text = getNhanDinh(month, slide);
-  const pm   = isPM();
-
-  if (!text && !pm) { el.style.display = "none"; return; }
-
+  // Ẩn nếu không có nội dung
+  if (!text) { el.style.display = "none"; return; }
   el.style.display = "";
   el.innerHTML = `
-    <div class="nhan-dinh-label">
-      <span>Nhận định</span>
-      ${pm ? `<button class="nhan-dinh-edit-btn" onclick="editNhanDinh('${month}',${slide})">✏️ Chỉnh sửa</button>` : ""}
-    </div>
-    <div class="nhan-dinh-text">${text || '<span style="color:var(--text-muted);font-style:italic">Chưa có nhận định.</span>'}</div>
+    <div class="nhan-dinh-label">Nhận định</div>
+    <div class="nhan-dinh-text">${text}</div>
   `;
 }
 
-function editNhanDinh(month, slide) {
-  const id   = `nd_${month}_${slide}`;
-  const el   = document.getElementById(id);
-  const text = getNhanDinh(month, slide);
-  el.innerHTML = `
-    <div class="nhan-dinh-label"><span>Nhận định</span></div>
-    <textarea class="nhan-dinh-textarea" id="nd_input_${month}_${slide}" placeholder="Nhập nhận định cho ${LBL[month]}...">${text}</textarea>
-    <div class="nhan-dinh-actions">
-      <button class="nhan-dinh-save" onclick="saveNhanDinhUI('${month}',${slide})">Lưu</button>
-      <button class="nhan-dinh-cancel" onclick="renderNhanDinh('${month}',${slide})">Hủy</button>
-    </div>
-  `;
-  document.getElementById(`nd_input_${month}_${slide}`).focus();
-}
-
-async function saveNhanDinhUI(month, slide) {
-  const val = document.getElementById(`nd_input_${month}_${slide}`).value.trim();
-  const btn = document.querySelector(`#nd_${month}_${slide} .nhan-dinh-save`);
-
-  if (btn) { btn.textContent = "Đang lưu..."; btn.disabled = true; }
-
-  try {
-    const res = await fetch(API, {
-      method : "POST",
-      headers: { "Content-Type": "application/json" },
-      body   : JSON.stringify({
-        token  : PM_HASH,
-        month,
-        slide  : String(slide),
-        content: val,
-      }),
-    });
-    const json = await res.json();
-    if (json.ok) {
-      if (!ND_CACHE[month]) ND_CACHE[month] = {};
-      ND_CACHE[month][slide] = val;
-      renderNhanDinh(month, slide);
-    } else {
-      alert("Lỗi lưu nhận định: " + (json.error || "Unknown"));
-      if (btn) { btn.textContent = "Lưu"; btn.disabled = false; }
-    }
-  } catch (err) {
-    alert("Lỗi kết nối: " + err.message);
-    if (btn) { btn.textContent = "Lưu"; btn.disabled = false; }
-  }
-}
-
-// ── HELPER: render tag badge cho Slide 3 ─────────────
-// Tag lạ (chưa định nghĩa) → màu xám mặc định, không lỗi
+// ── HELPER: render tag badge cho Slide 3 ─────────────────
+// Tag lạ → màu xám mặc định, không lỗi
 function projTag(tag) {
   if (!tag) return "";
-  const map = {
-    "doanh thu"  : "dt",
-    "traffic"    : "tf",
-    "thuận tiện" : "tt",
-  };
+  const map = { "doanh thu": "dt", "traffic": "tf", "thuận tiện": "tt" };
   const cls = map[tag.toLowerCase()] || "def";
   return `<span class="proj-tag ${cls}">${tag}</span>`;
 }
-
-const _now = new Date();
-const _prev = new Date(_now.getFullYear(), _now.getMonth()-1, 1);
-const _pk = _prev.getFullYear()+"-"+String(_prev.getMonth()+1).padStart(2,"0");
-let current = MONTHS.includes(_pk) ? _pk : MONTHS[MONTHS.length-1];
-let loadToken = 0;
 
 async function sha256(str) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
@@ -391,11 +318,7 @@ async function handleLogin() {
   const val = document.getElementById("pwInput").value;
   if (!val) return;
   const hash = await sha256(val);
-  if (hash === PM_HASH) {
-    saveSession();
-    savePMSession();
-    showDashboard();
-  } else if (hash === PW_HASH) {
+  if (hash === PW_HASH) {
     saveSession();
     showDashboard();
   } else {
@@ -486,9 +409,17 @@ async function fetchMonth(m){
 
 const LOGO_SVG_SM = `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:22px;height:22px"><path d="M20.0049 6.00421e-07C16.0491 -0.000968492 12.1818 1.17118 8.89217 3.36822C5.60254 5.56526 3.03833 8.68849 1.52382 12.3429C0.00932028 15.9974 -0.387445 20.0188 0.383706 23.8988C1.15486 27.7787 3.05928 31.3428 5.85614 34.1404C8.65299 36.9379 12.2166 38.8432 16.0964 39.6153C19.9761 40.3874 23.9977 39.9916 27.6525 38.478C31.3073 36.9644 34.4312 34.401 36.629 31.1119C38.8269 27.8228 40 23.9558 40 20C39.9987 14.6969 37.8918 9.61132 34.1424 5.86102C30.393 2.11071 25.308 0.00259808 20.0049 6.00421e-07ZM22.4547 5.97745C23.0776 5.97745 23.6865 6.16211 24.2045 6.50806C24.7224 6.85402 25.1262 7.34575 25.3648 7.92113C25.6034 8.49651 25.6661 9.1297 25.5449 9.74068C25.4238 10.3517 25.1242 10.913 24.6841 11.3538C24.244 11.7946 23.6831 12.095 23.0723 12.2172C22.4615 12.3393 21.8282 12.2776 21.2525 12.0399C20.6767 11.8022 20.1844 11.3991 19.8376 10.8817C19.4908 10.3643 19.3052 9.75565 19.3043 9.13277C19.3036 8.71823 19.3848 8.30763 19.5431 7.92452C19.7015 7.54141 19.9339 7.19331 20.227 6.90019C20.5201 6.60706 20.8682 6.37467 21.2513 6.21633C21.6344 6.05799 22.045 5.97681 22.4596 5.97745H22.4547ZM23.611 13.1553L22.5919 16.9574H18.7996L19.8138 13.1553H23.611ZM10.2548 16.9476H14.0519L15.071 13.1553H18.878L17.854 16.9574H14.0568L13.0426 20.7545H9.24058L10.2548 16.9476ZM6.82509 30.1764L7.8491 26.3694H11.6463L10.6272 30.1764H6.82509ZM15.4434 26.3792H11.6414L12.6605 22.5723H16.4625L15.4434 26.3792ZM17.5796 21.6707L18.5938 17.8687H22.4057L21.3866 21.6707H17.5796ZM27.6923 30.1764H23.8903L24.9045 26.3792H21.1122L22.1313 22.5723H25.9383L24.9192 26.3694H28.7114L27.6923 30.1764ZM32.1411 13.1798H28.3391L27.3248 16.9721H23.5179L24.537 13.17H28.3342L29.3533 9.37284H33.1602L32.1411 13.1798Z" fill="#39B54A"/></svg>`;
 
-function slideHeader(lbl){
-  return `<div class="slide-hd"><div class="slogo">${LOGO_SVG_SM}</div><div class="stxt"><span class="gn">Nhà thuốc An Khang Online</span> — Cập nhật tình hình kinh doanh ${lbl.toUpperCase()}</div></div>`;
+// ── 3 hàm slideHeader riêng cho từng slide ───────────────
+function slideHeaderOnline(lbl) {
+  return `<div class="slide-hd"><div class="slogo">${LOGO_SVG_SM}</div><div class="stxt"><span class="gn">Nhà thuốc An Khang Online</span> — CẬP NHẬT TÌNH HÌNH KINH DOANH ONLINE ${lbl.toUpperCase()}</div></div>`;
 }
+function slideHeaderWebApp(lbl) {
+  return `<div class="slide-hd"><div class="slogo">${LOGO_SVG_SM}</div><div class="stxt"><span class="gn">Nhà thuốc An Khang Online</span> — CẬP NHẬT TÌNH HÌNH KINH DOANH WEB-APP ${lbl.toUpperCase()}</div></div>`;
+}
+function slideHeaderProjects() {
+  return `<div class="slide-hd"><div class="slogo">${LOGO_SVG_SM}</div><div class="stxt"><span class="gn">Nhà thuốc An Khang Online</span> — DANH SÁCH DỰ ÁN LỚN</div></div>`;
+}
+
 function donutNote(labels,data,palette){
   return `<table class="donut-note">${labels.map((lb,i)=>`<tr><td class="dn-pct"><span class="dn-dot" style="background:${palette[i]||'#ccc'}"></span>${data[i]}%</td><td class="dn-name">${lb}</td></tr>`).join("")}</table>`;
 }
@@ -514,11 +445,11 @@ function buildHTML(month,d,prev){
   const rC=chg(d.totalRevenue,prev?.totalRevenue),wC=chg(d.web?.revenue,prev?.web?.revenue),aC=chg(d.app?.revenue,prev?.app?.revenue);
 
   // ── Slide 3: Dự án lớn ────────────────────────────────
-  const proj        = d.projects || { done: [], plan: [] };
-  const nextMonIdx  = MONTHS.indexOf(month) + 1;
-  const nextMonLbl  = nextMonIdx < MONTHS.length ? LBL[MONTHS[nextMonIdx]] : "tháng tới";
+  const proj       = d.projects || { done: [], plan: [] };
+  const nextMonIdx = MONTHS.indexOf(month) + 1;
+  const nextMonLbl = nextMonIdx < MONTHS.length ? LBL[MONTHS[nextMonIdx]] : "tháng tới";
 
-  // Render 1 cột dự án (done hoặc plan)
+  // Render 1 cột dự án — bổ sung "Go live: " trước timeline
   function projCol(title, count, items) {
     const rows = items.length === 0
       ? `<div class="proj-empty">Chưa có dữ liệu</div>`
@@ -530,7 +461,7 @@ function buildHTML(month,d,prev){
           </div>
           <div class="proj-right">
             ${projTag(p.tag)}
-            ${p.timeline ? `<span class="proj-timeline">${p.timeline}</span>` : ""}
+            ${p.timeline ? `<span class="proj-timeline">Go live: ${p.timeline}</span>` : ""}
           </div>
         </div>`).join("");
     return `
@@ -544,7 +475,7 @@ function buildHTML(month,d,prev){
   }
 
   return `
-<div class="slide">${slideHeader(lbl)}<div class="slide-body">
+<div class="slide">${slideHeaderOnline(lbl)}<div class="slide-body">
 <div class="row3">
   <div class="cbox"><span class="cbox-title">Doanh thu Online (Tỷ đồng)</span>
     <div style="height:190px;position:relative"><canvas id="c_dt" style="position:absolute;inset:0;width:100%!important;height:100%!important"></canvas></div>
@@ -561,7 +492,7 @@ function buildHTML(month,d,prev){
 <div class="nhan-dinh" id="nd_${month}_1"></div>
 </div></div></div>
 
-<div class="slide">${slideHeader(lbl)}<div class="slide-body">
+<div class="slide">${slideHeaderWebApp(lbl)}<div class="slide-body">
 <div class="row3">
   <div class="cbox"><span class="cbox-title">Doanh thu Web – App (Tỷ đồng)</span>
     <div class="legend"><div class="litem"><div class="ldot" style="background:${GREEN_BAR}"></div>App</div><div class="litem"><div class="ldot" style="background:${BLUE_WEB}"></div>Web</div></div>
@@ -604,7 +535,7 @@ function buildHTML(month,d,prev){
 </div>
 </div></div>
 
-<div class="slide">${slideHeader(lbl)}<div class="slide-body">
+<div class="slide">${slideHeaderProjects()}<div class="slide-body">
 <div class="projects-grid">
   ${projCol(`Dự án lớn ${lbl}`, `${proj.done.length} dự án`, proj.done)}
   ${projCol(`Dự án lớn ${nextMonLbl}`, `Kế hoạch`, proj.plan)}
@@ -656,18 +587,18 @@ async function load(month){
     renderCharts(month,d,prev);
     document.getElementById("lastUpdated").textContent="Cập nhật: "+new Date().toLocaleString("vi-VN");
     document.getElementById("footer").textContent="Nguồn: Google Sheet — An Khang Dashboard · "+LBL[month];
-    // Render nhận định cả 3 slides
+    // Render nhận định 3 slides
     renderNhanDinh(month, 1);
     renderNhanDinh(month, 2);
     renderNhanDinh(month, 3);
-    // Prefetch tuần tự từ gần → xa, SAU khi tháng hiện tại xong
+    // Prefetch các tháng còn lại — tuần tự từ gần → xa, SAU khi tháng hiện tại xong
     (function prefetchRest(){
-      const ci=MONTHS.indexOf(month),max=Math.max(ci,MONTHS.length-1-ci);
+      const ci=VISIBLE_MONTHS.indexOf(month), max=Math.max(ci, VISIBLE_MONTHS.length-1-ci);
       let chain=Promise.resolve();
       for(let r=1;r<=max;r++){
-        const b=ci-r,a=ci+r;
-        if(b>=0) chain=chain.then(()=>fetchMonth(MONTHS[b]).catch(()=>{}));
-        if(a<MONTHS.length) chain=chain.then(()=>fetchMonth(MONTHS[a]).catch(()=>{}));
+        const b=ci-r, a=ci+r;
+        if(b>=0) chain=chain.then(()=>fetchMonth(VISIBLE_MONTHS[b]).catch(()=>{}));
+        if(a<VISIBLE_MONTHS.length) chain=chain.then(()=>fetchMonth(VISIBLE_MONTHS[a]).catch(()=>{}));
       }
     })();
   }catch(e){
@@ -676,9 +607,9 @@ async function load(month){
   }
 }
 
-// INIT
+// INIT — chỉ tạo tab cho VISIBLE_MONTHS (ẩn tháng hiện tại)
 const nav=document.getElementById("tabNav");
-MONTHS.forEach(m=>{
+VISIBLE_MONTHS.forEach(m=>{
   const b=document.createElement("button");
   b.className="tab-btn"+(m===current?" active":"");
   b.textContent=LBL[m];
@@ -686,6 +617,7 @@ MONTHS.forEach(m=>{
   nav.appendChild(b);
 });
 
+// Ẩn/hiện tab khi scroll
 (function(){
   const tw=document.getElementById("tabNav");let lastY=0,tick=false;
   window.addEventListener("scroll",()=>{
