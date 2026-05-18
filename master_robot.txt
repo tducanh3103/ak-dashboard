@@ -1,9 +1,8 @@
 /**
- * MASTER ROBOT V17.0 - OPTIMIZED SYNC (DAY 01 ONLY FOR TARGETS)
+ * MASTER ROBOT V18.0 - THÊM SLIDE 3 DỰ ÁN
  * ---------------------------------------------------------------------------
- * Tác vụ : Thực đạt, Target Online, Snapshot Danh mục, Target 4 Kênh.
- * Update : Chỉ cập nhật Target (T2 & T4) vào ngày 01 hàng tháng.
- * Lý do  : Tiết kiệm tài nguyên, tránh ghi đè dữ liệu kế hoạch đã cố định.
+ * Tác vụ : Thực đạt, Target Online, Snapshot Danh mục, Target 4 Kênh, GA4, Báo cáo.
+ * Thay đổi so với V17: getReportData() thêm tab "Dự án" + hàm _aggProjects()
  * ---------------------------------------------------------------------------
  */
 
@@ -35,7 +34,7 @@ function run_Master_System_Ultimate() {
   const currentMonth   = today.getMonth() + 1;
 
   Logger.log("==================================================");
-  Logger.log("🚀 BẮT ĐẦU CHUỖI TÁC VỤ MASTER V17.0");
+  Logger.log("🚀 BẮT ĐẦU CHUỖI TÁC VỤ MASTER V18.0");
   Logger.log("📅 Hôm nay là ngày: " + today.getDate());
   Logger.log("==================================================");
 
@@ -270,10 +269,7 @@ function sync_CategorySnapshot_ByMonth(ssSource, ssTarget, month) {
     return;
   }
 
-  // ------------------------------------------------------------------------
   // Tìm cột DT lũy kế
-  // ------------------------------------------------------------------------
-
   const headers =
     sSheet
       .getRange(2, 1, 1, sSheet.getLastColumn())
@@ -302,10 +298,7 @@ function sync_CategorySnapshot_ByMonth(ssSource, ssTarget, month) {
       .getValues()
       .map(r => r[0]);
 
-  // ------------------------------------------------------------------------
   // Boundary detection
-  // ------------------------------------------------------------------------
-
   let callRow =
     colA.findIndex(
       v => v && v.toUpperCase().includes("CALLCENTER")
@@ -346,10 +339,7 @@ function sync_CategorySnapshot_ByMonth(ssSource, ssTarget, month) {
     return;
   }
 
-  // ------------------------------------------------------------------------
   // Extract dataset
-  // ------------------------------------------------------------------------
-
   const dataset = [];
 
   for (let i = totalRow + 1; i < affRow; i++) {
@@ -368,10 +358,7 @@ function sync_CategorySnapshot_ByMonth(ssSource, ssTarget, month) {
     return;
   }
 
-  // ------------------------------------------------------------------------
   // Date matching
-  // ------------------------------------------------------------------------
-
   const targetDate =
     new Date(CONFIG.YEAR, month - 1, 1);
 
@@ -399,10 +386,7 @@ function sync_CategorySnapshot_ByMonth(ssSource, ssTarget, month) {
     }
   }
 
-  // ------------------------------------------------------------------------
   // UPDATE existing rows
-  // ------------------------------------------------------------------------
-
   if (existingRows.length > 0) {
 
     for (let i = 0; i < existingRows.length; i++) {
@@ -429,10 +413,7 @@ function sync_CategorySnapshot_ByMonth(ssSource, ssTarget, month) {
     return;
   }
 
-  // ------------------------------------------------------------------------
   // APPEND new rows
-  // ------------------------------------------------------------------------
-
   const startRow =
     tSheet.getLastRow() + 1;
 
@@ -517,7 +498,8 @@ function getReportData(month) {
   const [year, mon] = month.split("-").map(Number);
 
   // ── Batch đọc tất cả tabs 1 lần ──────────────────────────
-  const TAB_NAMES = ["Online","WEB","APP","CC","Sàn","Affiliate","Danh mục","GA4_Web","GA4_App","Nhận định"];
+  // "Dự án" được thêm vào — nếu tab chưa tồn tại thì trả về [], không lỗi
+  const TAB_NAMES = ["Online","WEB","APP","CC","Sàn","Affiliate","Danh mục","GA4_Web","GA4_App","Nhận định","Dự án"];
   const tabData   = {};
   TAB_NAMES.forEach(name => {
     const sh = ss.getSheetByName(name);
@@ -568,9 +550,13 @@ function getReportData(month) {
     },
 
     categories  : _aggCategories(tabData["Danh mục"], year, mon),
-    nhanDinh    : _aggNhanDinh(tabData["Nhận định"], year, mon),
+    nhanDinh    : _aggNhanDinh(tabData["Nhận định"],  year, mon),
     appDownloads: getAppDownloads(year, mon),
     cr          : _calcCRFromData(tabData["GA4_Web"], tabData["GA4_App"], year, mon, web.orders, app.orders),
+
+    // ── Dự án lớn (Slide 3) ─────────────────────────────────
+    // Trả về { done: [], plan: [] } nếu tab chưa có — không lỗi
+    projects    : _aggProjects(tabData["Dự án"], year, mon),
   };
 }
 
@@ -663,6 +649,88 @@ function _calcCRFromData(webRows, appRows, year, mon, webOrders, appOrders) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Aggregate nhận định từ tab "Nhận định"
+// ---------------------------------------------------------------------------
+function _aggNhanDinh(rows, year, mon) {
+  const result = {};
+  for (let i = 1; i < rows.length; i++) {
+    const raw = rows[i][0];
+    if (!raw) continue;
+    const d = (raw instanceof Date) ? raw : new Date(raw);
+    if (isNaN(d.getTime())) continue;
+    if (d.getFullYear() !== year || d.getMonth() + 1 !== mon) continue;
+    const slide   = parseInt(rows[i][1], 10);
+    const content = rows[i][2] ? rows[i][2].toString().trim() : "";
+    if (slide && content) result[slide] = content;
+  }
+  return result; // { 1: "slide 1", 2: "slide 2", 3: "slide 3" }
+}
+
+// ---------------------------------------------------------------------------
+// Aggregate dự án lớn từ tab "Dự án"
+//
+// Cấu trúc tab "Dự án" trong TARGET sheet:
+//   A: Tháng     — Date object, ngày 01/MM/YYYY đại diện cả tháng
+//   B: Loại      — "done" (đã xong) hoặc "plan" (kế hoạch)
+//   C: STT       — Số thứ tự hiển thị
+//   D: Tên dự án — Tên task
+//   E: Tag       — "Doanh thu" / "Traffic" / "Thuận tiện" hoặc để trống
+//   F: Timeline  — VD: "22/04" hoặc để trống
+//
+// Trả về { done: [...], plan: [...] }
+// Mỗi item: { stt, name, tag, timeline }
+//
+// An toàn với loại mới và tag mới:
+//   - Loại khác "done"/"plan" → bỏ qua, không lỗi
+//   - Tag mới → HTML hiển thị màu xám mặc định, không lỗi
+// ---------------------------------------------------------------------------
+function _aggProjects(rows, year, mon) {
+  const done = [];
+  const plan = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const raw = rows[i][0];
+    if (!raw) continue;
+
+    // Parse ngày — dùng cùng cách với normalizeDate() ở các tab khác
+    const d = (raw instanceof Date) ? raw : new Date(raw);
+    if (isNaN(d.getTime())) continue;
+    if (d.getFullYear() !== year || d.getMonth() + 1 !== mon) continue;
+
+    const loai = rows[i][1] ? rows[i][1].toString().trim().toLowerCase() : "";
+    const stt  = rows[i][2] ? parseInt(rows[i][2], 10) : 0;
+    const name = rows[i][3] ? rows[i][3].toString().trim() : "";
+    const tag  = rows[i][4] ? rows[i][4].toString().trim() : "";
+
+    // Cột F (index 5): Timeline — hỗ trợ cả Date object lẫn string
+    let timeline = "";
+    const rawTL  = rows[i][5];
+    if (rawTL instanceof Date && !isNaN(rawTL.getTime())) {
+      // Date object → format dd/MM
+      const dd = String(rawTL.getDate()).padStart(2, "0");
+      const mm = String(rawTL.getMonth() + 1).padStart(2, "0");
+      timeline = dd + "/" + mm;
+    } else if (rawTL && rawTL.toString().trim()) {
+      timeline = rawTL.toString().trim();
+    }
+
+    if (!name) continue; // Bỏ qua row trống tên
+
+    const item = { stt, name, tag, timeline };
+
+    if (loai === "done")      done.push(item);
+    else if (loai === "plan") plan.push(item);
+    // Loại khác: bỏ qua — không lỗi, chỉ không hiển thị
+  }
+
+  // Sắp xếp theo STT tăng dần
+  done.sort((a, b) => a.stt - b.stt);
+  plan.sort((a, b) => a.stt - b.stt);
+
+  return { done, plan };
+}
+
 // ===========================================================================
 // HELPERS CHUNG
 // ===========================================================================
@@ -725,7 +793,6 @@ function safeSync(sheet, date, value1, value2, col1, col2) {
   for (let i = 0; i < values.length; i++) {
 
     const cellDate = values[i][0];
-
     const cellTime = normalizeDate(cellDate);
 
     if (!cellTime) {
@@ -735,20 +802,14 @@ function safeSync(sheet, date, value1, value2, col1, col2) {
     if (cellTime === targetTime) {
 
       if (value1 !== undefined && col1) {
-        sheet.getRange(i + 2, col1)
-          .setValue(value1);
+        sheet.getRange(i + 2, col1).setValue(value1);
       }
 
       if (value2 !== undefined && col2) {
-        sheet.getRange(i + 2, col2)
-          .setValue(value2);
+        sheet.getRange(i + 2, col2).setValue(value2);
       }
 
-      Logger.log(
-        "MATCH: " +
-        sheet.getName() +
-        " | row=" + (i + 2)
-      );
+      Logger.log("MATCH: " + sheet.getName() + " | row=" + (i + 2));
 
       return true;
     }
@@ -786,7 +847,6 @@ function safeSyncOnline(sheet, date, totalRev, totalOrd, totalGP) {
   for (let i = 0; i < values.length; i++) {
 
     const cellDate = values[i][0];
-
     const cellTime = normalizeDate(cellDate);
 
     if (!cellTime) {
@@ -795,18 +855,11 @@ function safeSyncOnline(sheet, date, totalRev, totalOrd, totalGP) {
 
     if (cellTime === targetTime) {
 
-      sheet.getRange(i + 2, 2)
-        .setValue(totalRev);
+      sheet.getRange(i + 2, 2).setValue(totalRev);
+      sheet.getRange(i + 2, 3).setValue(totalOrd);
+      sheet.getRange(i + 2, 4).setValue(totalGP);
 
-      sheet.getRange(i + 2, 3)
-        .setValue(totalOrd);
-
-      sheet.getRange(i + 2, 4)
-        .setValue(totalGP);
-
-      Logger.log(
-        "MATCH ONLINE: row=" + (i + 2)
-      );
+      Logger.log("MATCH ONLINE: row=" + (i + 2));
 
       return true;
     }
@@ -844,7 +897,6 @@ function safeSyncSanOnly(sheet, date, shoRev, mwgRev, shoOrd, mwgOrd) {
   for (let i = 0; i < values.length; i++) {
 
     const cellDate = values[i][0];
-
     const cellTime = normalizeDate(cellDate);
 
     if (!cellTime) {
@@ -853,21 +905,12 @@ function safeSyncSanOnly(sheet, date, shoRev, mwgRev, shoOrd, mwgOrd) {
 
     if (cellTime === targetTime) {
 
-      sheet.getRange(i + 2, 9)
-        .setValue(shoRev);
+      sheet.getRange(i + 2, 9).setValue(shoRev);
+      sheet.getRange(i + 2, 10).setValue(mwgRev);
+      sheet.getRange(i + 2, 11).setValue(shoOrd);
+      sheet.getRange(i + 2, 12).setValue(mwgOrd);
 
-      sheet.getRange(i + 2, 10)
-        .setValue(mwgRev);
-
-      sheet.getRange(i + 2, 11)
-        .setValue(shoOrd);
-
-      sheet.getRange(i + 2, 12)
-        .setValue(mwgOrd);
-
-      Logger.log(
-        "MATCH SAN: row=" + (i + 2)
-      );
+      Logger.log("MATCH SAN: row=" + (i + 2));
 
       return true;
     }
@@ -900,9 +943,7 @@ function formatTargetDate(date) {
     return "";
   }
 
-  // Date object
   if (date instanceof Date) {
-
     return Utilities.formatDate(
       date,
       Session.getScriptTimeZone(),
@@ -910,7 +951,6 @@ function formatTargetDate(date) {
     );
   }
 
-  // String fallback
   return String(date).trim();
 }
 
@@ -955,20 +995,17 @@ function debugDateFormat() {
 const GA4_CONFIG = {
   WEB_PROPERTY_ID : "319910173",
   APP_PROPERTY_ID : "500599006",
-  // Regex exclude landing page không thuộc hệ sản phẩm (Web)
   WEB_EXCLUDE_REGEX: /^\/(ban-tin-suc-khoe|hoat-chat|benh|trieu-chung)/,
   BACKFILL_START   : "2026-01-01",
 };
 
 // ---------------------------------------------------------------------------
-// Hàm chính T5 — gắn vào run_Master_System_Ultimate(), chạy hàng ngày
-// Dùng lookback 3 ngày (t-1, t-2, t-3) để đảm bảo không bỏ sót
+// Hàm chính T5 — chạy hàng ngày, lookback 3 ngày
 // ---------------------------------------------------------------------------
 function sync_GA4Sessions() {
   const ssTarget = SpreadsheetApp.openById(CONFIG.TARGET_DASHBOARD_ID);
   const today    = new Date();
 
-  // Tính ngày bắt đầu = t-3, kết thúc = t-1
   const endDate   = new Date(today); endDate.setDate(today.getDate() - 1);
   const startDate = new Date(today); startDate.setDate(today.getDate() - CONFIG.LOOKBACK_DAYS);
 
@@ -994,7 +1031,6 @@ function sync_GA4Sessions() {
 
 // ---------------------------------------------------------------------------
 // Hàm backfill — chạy 1 LẦN DUY NHẤT thủ công
-// Lấy toàn bộ từ BACKFILL_START đến hôm qua (t-1)
 // ---------------------------------------------------------------------------
 function backfill_GA4Sessions() {
   const ssTarget = SpreadsheetApp.openById(CONFIG.TARGET_DASHBOARD_ID);
@@ -1023,20 +1059,7 @@ function backfill_GA4Sessions() {
 
 // ---------------------------------------------------------------------------
 // Hàm nội bộ — query GA4 và ghi vào sheet
-// sheet       : Sheet object (GA4_Web hoặc GA4_App)
-// propertyId  : GA4 Property ID (string)
-// startStr    : "YYYY-MM-DD"
-// endStr      : "YYYY-MM-DD"
-// filterLanding: true = áp dụng exclude regex cho Web
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// Hàm nội bộ — query GA4 và ghi vào sheet
 // Với Web: dùng 2 queries (tổng - excluded) thay vì pagination landing page
-// sheet        : Sheet object (GA4_Web hoặc GA4_App)
-// propertyId   : GA4 Property ID (string)
-// startStr     : "YYYY-MM-DD"
-// endStr       : "YYYY-MM-DD"
-// filterLanding: true = áp dụng exclude logic cho Web
 // ---------------------------------------------------------------------------
 function _syncGA4ToSheet(sheet, propertyId, startStr, endStr, filterLanding) {
   if (!sheet) {
@@ -1046,7 +1069,7 @@ function _syncGA4ToSheet(sheet, propertyId, startStr, endStr, filterLanding) {
 
   const dateRange = [{ startDate: startStr, endDate: endStr }];
 
-  // ── Query 1: Tổng sessions theo ngày (không có landingPage dimension) ──
+  // ── Query 1: Tổng sessions theo ngày ──
   let totalByDate = {};
   try {
     const r1 = AnalyticsData.Properties.runReport({
@@ -1071,11 +1094,10 @@ function _syncGA4ToSheet(sheet, propertyId, startStr, endStr, filterLanding) {
   if (filterLanding) {
     try {
       const r2 = AnalyticsData.Properties.runReport({
-        dateRanges       : dateRange,
-        dimensions       : [{ name: "date" }],
-        metrics          : [{ name: "sessions" }],
-        // Chỉ lấy các rows có landing page thuộc nhóm excluded
-        dimensionFilter  : {
+        dateRanges     : dateRange,
+        dimensions     : [{ name: "date" }],
+        metrics        : [{ name: "sessions" }],
+        dimensionFilter: {
           filter: {
             fieldName   : "landingPage",
             stringFilter: {
@@ -1116,7 +1138,6 @@ function _syncGA4ToSheet(sheet, propertyId, startStr, endStr, filterLanding) {
   const lastRow   = Math.max(sheet.getLastRow(), 1);
   const sheetData = sheet.getRange(1, 1, lastRow, 2).getValues();
 
-  // Build map: timestamp → rowIndex (1-based)
   const existingMap = {};
   for (let i = 1; i < sheetData.length; i++) {
     const d = sheetData[i][0];
@@ -1142,7 +1163,6 @@ function _syncGA4ToSheet(sheet, propertyId, startStr, endStr, filterLanding) {
     }
   });
 
-  // Append batch các ngày mới
   if (toAppend.length > 0) {
     const appendStart = sheet.getLastRow() + 1;
     sheet.getRange(appendStart, 1, toAppend.length, 2).setValues(toAppend);
@@ -1159,7 +1179,6 @@ function _syncGA4ToSheet(sheet, propertyId, startStr, endStr, filterLanding) {
 // Helper: "20260115" → Date object
 // ---------------------------------------------------------------------------
 function _parseGA4Date(str) {
-  // str = "YYYYMMDD"
   return new Date(
     parseInt(str.substring(0, 4), 10),
     parseInt(str.substring(4, 6), 10) - 1,
@@ -1176,7 +1195,6 @@ function formatGA4Date(date) {
 
 // ---------------------------------------------------------------------------
 // DEBUG: Xem GA4 Web trả về landing page dạng gì
-// Chỉ query 3 ngày gần nhất để nhanh
 // ---------------------------------------------------------------------------
 function debug_GA4WebLandingPage() {
   const today   = new Date();
@@ -1188,7 +1206,7 @@ function debug_GA4WebLandingPage() {
     dimensions : [{ name: "date" }, { name: "landingPage" }],
     metrics    : [{ name: "sessions" }],
     orderBys   : [{ metric: { metricName: "sessions" }, desc: true }],
-    limit      : 20, // chỉ lấy 20 rows đầu để xem
+    limit      : 20,
   };
 
   const response = AnalyticsData.Properties.runReport(
@@ -1252,8 +1270,7 @@ function getAppDownloads(year, mon) {
         const d = (raw instanceof Date) ? raw : new Date(raw);
         if (isNaN(d)) continue;
         if (d.getFullYear() < year || (d.getFullYear() === year && d.getMonth() + 1 <= mon)) {
-          // Cột F = index 5 (đếm từ 0)
-          const val = rows[i][5];
+          const val = rows[i][5]; // Cột F = index 5
           if (typeof val === "number") {
             total += val;
           } else if (typeof val === "string") {
@@ -1266,9 +1283,9 @@ function getAppDownloads(year, mon) {
     }
 
     return {
-      cumulative: sumRetainedFromColF(shTotal),   // Người giữ app (cột F Tổng quan)
-      android   : sumRetainedFromColF(shAndroid), // Android giữ app (cột F Android)
-      ios       : sumRetainedFromColF(shIOS),     // iOS giữ app (cột F iOS)
+      cumulative: sumRetainedFromColF(shTotal),
+      android   : sumRetainedFromColF(shAndroid),
+      ios       : sumRetainedFromColF(shIOS),
     };
 
   } catch (err) {
@@ -1289,24 +1306,6 @@ function calcCR(ss, year, mon, webOrders, appOrders) {
   const webRows = (ss.getSheetByName("GA4_Web") || {getDataRange:()=>({getValues:()=>[]})}).getDataRange?.().getValues() || [];
   const appRows = (ss.getSheetByName("GA4_App") || {getDataRange:()=>({getValues:()=>[]})}).getDataRange?.().getValues() || [];
   return _calcCRFromData(webRows, appRows, year, mon, webOrders, appOrders);
-}
-
-// ---------------------------------------------------------------------------
-// Aggregate nhận định từ tab "Nhận định"
-// ---------------------------------------------------------------------------
-function _aggNhanDinh(rows, year, mon) {
-  const result = {};
-  for (let i = 1; i < rows.length; i++) {
-    const raw = rows[i][0];
-    if (!raw) continue;
-    const d = (raw instanceof Date) ? raw : new Date(raw);
-    if (isNaN(d.getTime())) continue;
-    if (d.getFullYear() !== year || d.getMonth() + 1 !== mon) continue;
-    const slide   = parseInt(rows[i][1], 10);
-    const content = rows[i][2] ? rows[i][2].toString().trim() : "";
-    if (slide && content) result[slide] = content;
-  }
-  return result; // { 1: "nội dung slide 1", 2: "nội dung slide 2" }
 }
 
 // ===========================================================================
@@ -1342,8 +1341,8 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    const data    = sheet.getDataRange().getValues();
-    const slideN  = parseInt(slide, 10);
+    const data   = sheet.getDataRange().getValues();
+    const slideN = parseInt(slide, 10);
 
     // Tìm row đã có → update
     for (let i = 1; i < data.length; i++) {
@@ -1360,7 +1359,6 @@ function doPost(e) {
     }
 
     // Không có → append row mới
-    // Tạo date object ngày 01 của tháng
     const parts   = month.split("-");
     const dateVal = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
     sheet.appendRow([dateVal, slideN, content]);
